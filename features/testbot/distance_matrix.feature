@@ -1,4 +1,4 @@
-@matrix @testbot @ch
+@matrix @testbot
 Feature: Basic Distance Matrix
 # note that results of travel distance are in metres
 
@@ -6,21 +6,23 @@ Feature: Basic Distance Matrix
         Given the profile "testbot"
         And the partition extra arguments "--small-component-size 1 --max-cell-sizes 2,4,8,16"
 
-    Scenario: Testbot - Travel distance matrix of minimal network
+    @ch
+    Scenario: Testbot - Travel distance matrix of minimal network only
         Given the node map
             """
-            a b
+            a b c d e f g h i j k l m n o p q r s t u v x y z
             """
 
         And the ways
             | nodes |
-            | ab    |
+            | abcdefghijklmnopqrstuvxyz|
 
         When I request a travel distance matrix I should get
             |   | a      | b      |
             | a | 0      | 100+-1 |
             | b | 100+-1 | 0      |
 
+    @ch
     Scenario: Testbot - Travel distance matrix of minimal network with toll exclude
         Given the query options
             | exclude  | toll        |
@@ -45,6 +47,7 @@ Feature: Basic Distance Matrix
             | c |        |        | 0      | 100+-1 |
             | d |        |        | 100+-1 | 0      |
 
+    @ch
     Scenario: Testbot - Travel distance matrix of minimal network with motorway exclude
         Given the query options
             | exclude  | motorway  |
@@ -66,7 +69,7 @@ Feature: Basic Distance Matrix
             |   | a | b      | c      | d      |
             | a | 0 | 300+-2 | 100+-2 | 200+-2 |
 
-
+       @ch
        Scenario: Testbot - Travel distance matrix of minimal network disconnected motorway exclude
         Given the query options
             | exclude  | motorway  |
@@ -89,6 +92,7 @@ Feature: Basic Distance Matrix
             | a | 0 | 50+-1 |   |
 
 
+    @ch
     Scenario: Testbot - Travel distance matrix of minimal network with motorway and toll excludes
         Given the query options
             | exclude  | motorway,toll  |
@@ -110,6 +114,7 @@ Feature: Basic Distance Matrix
             |   | a | b      | e | g |
             | a | 0 | 100+-1 |   |   |
 
+    @ch
     Scenario: Testbot - Travel distance matrix with different way speeds
         Given the node map
             """
@@ -140,6 +145,7 @@ Feature: Basic Distance Matrix
             | c | 200+-1 |
             | d | 300+-1 |
 
+
     Scenario: Testbot - Travel distance matrix of small grid
         Given the node map
             """
@@ -162,6 +168,7 @@ Feature: Basic Distance Matrix
             | e | 200+-1 | 100+-1 | 0      | 100+-1 |
             | f | 300+-1 | 200+-1 | 100+-1 | 0      |
 
+    @ch
     Scenario: Testbot - Travel distance matrix of network with unroutable parts
         Given the node map
             """
@@ -177,6 +184,7 @@ Feature: Basic Distance Matrix
             | a | 0 | 100+-1 |
             | b |   | 0      |
 
+    @ch
     Scenario: Testbot - Travel distance matrix of network with oneways
         Given the node map
             """
@@ -197,6 +205,7 @@ Feature: Basic Distance Matrix
             | d | 200+-2 | 300+-2 | 0      | 300+-2 |
             | e | 300+-2 | 400+-2 | 100+-2 | 0      |
 
+    @ch
     Scenario: Testbot - Rectangular travel distance matrix
         Given the node map
             """
@@ -256,6 +265,7 @@ Feature: Basic Distance Matrix
             | f | 300+-1 | 200+-1 | 100+-1 | 0      |
 
 
+     @ch
      Scenario: Testbot - Travel distance 3x2 matrix
         Given the node map
             """
@@ -277,6 +287,7 @@ Feature: Basic Distance Matrix
             | a | 100+-1 | 200+-1 | 300+-1 |
             | b | 0      | 100+-1 | 200+-1 |
 
+    @ch
     Scenario: Testbot - All coordinates are from same small component
         Given a grid size of 300 meters
         Given the extract extra arguments "--small-component-size 4"
@@ -299,6 +310,7 @@ Feature: Basic Distance Matrix
             | f | 0      | 300+-2 |
             | g | 300+-2 | 0      |
 
+    @ch
     Scenario: Testbot - Coordinates are from different small component and snap to big CC
         Given a grid size of 300 meters
         Given the extract extra arguments "--small-component-size 4"
@@ -335,6 +347,7 @@ Feature: Basic Distance Matrix
             | h | 0      | 300+-2 | 0      | 300+-2 |
             | i | 300+-2 | 0      | 300+-2 | 0      |
 
+    @ch
     Scenario: Testbot - Travel distance matrix with loops
         Given the node map
             """
@@ -356,7 +369,7 @@ Feature: Basic Distance Matrix
             | 3 | 400+-1 | 500+-1 | 0      | 100+-1 |
             | 4 | 300+-1 | 400+-1 | 700+-1 | 0      |
 
-
+    @ch
     Scenario: Testbot - Travel distance matrix based on segment durations
         Given the profile file
         """
@@ -398,6 +411,7 @@ Feature: Basic Distance Matrix
             | d | 300+-2 | 200+-2 | 100+-2 | 0      | 300+-2 |
             | e | 400+-2 | 300+-2 | 200+-2 | 300+-2 | 0      |
 
+    @ch
     Scenario: Testbot - Travel distance matrix for alternative loop paths
         Given the profile file
         """
@@ -445,6 +459,7 @@ Feature: Basic Distance Matrix
             | 7 | 300+-5  | 200+-5  | 600+-5  | 500+-5  | 900+-5  | 800+-5  | 0       | 1100+-5 |
             | 8 | 400+-5  | 300+-5  | 700+-5  | 600+-5  | 1000+-5 | 900+-5  | 100+-5  | 0       |
 
+    @ch
     Scenario: Testbot - Travel distance matrix with ties
         Given the node map
             """

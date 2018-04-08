@@ -75,6 +75,43 @@ using PackedEdge = std::tuple</*from*/ NodeID, /*to*/ NodeID, /*from_clique_arc*
 using PackedPath = std::vector<PackedEdge>;
 
 template <bool DIRECTION, typename OutIter>
+inline void retrievePackedPathFromSingleManyToManyHeap(
+    const SearchEngineData<Algorithm>::ManyToManyQueryHeap &heap, const NodeID middle, OutIter out)
+{
+    NodeID current = middle;
+    NodeID parent = heap.GetData(current).parent;
+
+    while (current != parent)
+    {
+        const auto &data = heap.GetData(current);
+
+        if (DIRECTION == FORWARD_DIRECTION)
+        {
+            *out = std::make_tuple(parent, current, data.from_clique_arc);
+            ++out;
+        }
+        else if (DIRECTION == REVERSE_DIRECTION)
+        {
+            *out = std::make_tuple(current, parent, data.from_clique_arc);
+            ++out;
+        }
+
+        current = parent;
+        parent = heap.GetData(parent).parent;
+    }
+}
+
+template <bool DIRECTION>
+inline PackedPath retrievePackedPathFromSingleManyToManyHeap(
+    const SearchEngineData<Algorithm>::ManyToManyQueryHeap &heap, const NodeID middle)
+{
+    PackedPath packed_path;
+    retrievePackedPathFromSingleManyToManyHeap<DIRECTION>(
+        heap, middle, std::back_inserter(packed_path));
+    return packed_path;
+}
+
+template <bool DIRECTION, typename OutIter>
 inline void retrievePackedPathFromSingleHeap(const SearchEngineData<Algorithm>::QueryHeap &heap,
                                              const NodeID middle,
                                              OutIter out)

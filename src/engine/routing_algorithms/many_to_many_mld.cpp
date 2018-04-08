@@ -1,5 +1,5 @@
 #include "engine/routing_algorithms/many_to_many.hpp"
-#include "engine/routing_algorithms/routing_base.hpp"
+#include "engine/routing_algorithms/routing_base_mld.hpp"
 
 #include <boost/assert.hpp>
 #include <boost/range/iterator_range_core.hpp>
@@ -18,6 +18,9 @@ namespace routing_algorithms
 
 namespace mld
 {
+
+using PackedEdge = std::tuple</*from*/ NodeID, /*to*/ NodeID, /*from_clique_arc*/ bool>;
+using PackedPath = std::vector<PackedEdge>;
 
 template <typename MultiLevelPartition>
 inline LevelID getNodeQueryLevel(const MultiLevelPartition &partition,
@@ -217,8 +220,12 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                 const DataFacade<Algorithm> &facade,
                 const std::vector<PhantomNode> &phantom_nodes,
                 std::size_t phantom_index,
-                const std::vector<std::size_t> &phantom_indices)
+                const std::vector<std::size_t> &phantom_indices,
+                const bool calculate_distance)
 {
+    (void)calculate_distance; // flag stub to use for calculating distances in matrix in mld in the
+                              // future
+
     std::vector<EdgeWeight> weights(phantom_indices.size(), INVALID_EDGE_WEIGHT);
     std::vector<EdgeDuration> durations(phantom_indices.size(), MAXIMAL_EDGE_DURATION);
     std::vector<EdgeDistance> distances(phantom_indices.size(), INVALID_EDGE_DISTANCE);
@@ -391,6 +398,7 @@ void forwardRoutingStep(const DataFacade<Algorithm> &facade,
                         const std::vector<NodeBucket> &search_space_with_buckets,
                         std::vector<EdgeWeight> &weights_table,
                         std::vector<EdgeDuration> &durations_table,
+                        std::vector<NodeID> &middle_nodes_table,
                         const PhantomNode &phantom_node)
 {
     const auto node = query_heap.DeleteMin();
@@ -417,6 +425,7 @@ void forwardRoutingStep(const DataFacade<Algorithm> &facade,
                                   : row_idx + column_idx * number_of_sources;
         auto &current_weight = weights_table[location];
         auto &current_duration = durations_table[location];
+        middle_nodes_table[location] = node;
 
         // Check if new weight is better
         auto new_weight = source_weight + target_weight;
@@ -445,10 +454,11 @@ void backwardRoutingStep(const DataFacade<Algorithm> &facade,
     const auto target_weight = query_heap.GetKey(node);
     const auto target_duration = query_heap.GetData(node).duration;
     const auto parent = query_heap.GetData(node).parent;
+    const auto from_clique_arc = query_heap.GetData(node).from_clique_arc;
 
     // Store settled nodes in search space bucket
     search_space_with_buckets.emplace_back(
-        node, parent, column_idx, target_weight, target_duration);
+        node, parent, from_clique_arc, column_idx, target_weight, target_duration);
 
     const auto &partition = facade.GetMultiLevelPartition();
     const auto maximal_level = partition.GetNumberOfLevels() - 1;
@@ -457,13 +467,132 @@ void backwardRoutingStep(const DataFacade<Algorithm> &facade,
         facade, node, target_weight, target_duration, query_heap, phantom_node, maximal_level);
 }
 
+void retrievePackedPathFromSearchSpace(NodeID middle_node_id,
+                                       const unsigned column_idx,
+                                       const std::vector<NodeBucket> &search_space_with_buckets,
+                                       PackedPath &path)
+{
+    std::vector<std::pair<NodeID, bool>> packed_leg;
+
+    auto bucket_list = std::equal_range(search_space_with_buckets.begin(),
+                                        search_space_with_buckets.end(),
+                                        middle_node_id,
+                                        NodeBucket::ColumnCompare(column_idx));
+
+    BOOST_ASSERT_MSG(std::distance(bucket_list.first, bucket_list.second) == 1,
+                     "The pointers are not pointing to the same element.");
+
+    NodeID current_node_id = middle_node_id;
+
+    while (bucket_list.first->parent_node != current_node_id &&
+           bucket_list.first != search_space_with_buckets.end())
+    {
+        current_node_id = bucket_list.first->parent_node;
+        packed_leg.emplace_back(
+            std::make_pair(current_node_id, bucket_list.first->from_clique_arc));
+
+        bucket_list = std::equal_range(search_space_with_buckets.begin(),
+                                       search_space_with_buckets.end(),
+                                       current_node_id,
+                                       NodeBucket::ColumnCompare(column_idx));
+    }
+    if (packed_leg.size() > 0)
+    {
+        path.emplace_back(
+            std::make_tuple(middle_node_id, packed_leg.at(0).first, packed_leg.at(0).second));
+
+        for (auto pair = packed_leg.begin(); pair < packed_leg.end(); ++pair)
+        {
+            path.emplace_back(
+                std::make_tuple(pair->first, std::next(pair)->first, std::next(pair)->second));
+        }
+    }
+}
+
+template <bool DIRECTION>
+void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQueryHeap &query_heap,
+                        const DataFacade<mld::Algorithm> &facade,
+                        const std::vector<PhantomNode> &phantom_nodes,
+                        const std::vector<std::size_t> &target_indices,
+                        const unsigned row_idx,
+                        const std::size_t source_index,
+                        const PhantomNode &source_phantom,
+                        const unsigned number_of_sources,
+                        const unsigned number_of_targets,
+                        const std::vector<NodeBucket> &search_space_with_buckets,
+                        std::vector<EdgeDistance> &distances_table,
+                        const std::vector<NodeID> &middle_nodes_table)
+{
+    (void)facade;
+    (void)query_heap;
+    (void)phantom_nodes;
+    (void)source_phantom;
+
+    for (unsigned column_idx = 0; column_idx < number_of_targets; ++column_idx)
+    {
+        const auto location = DIRECTION == FORWARD_DIRECTION
+                                  ? row_idx * number_of_targets + column_idx
+                                  : row_idx + column_idx * number_of_sources;
+
+        auto target_index = target_indices[column_idx];
+
+        if (source_index == target_index)
+        {
+            distances_table[location] = 0.0;
+            continue;
+        }
+        const auto &target_phantom = phantom_nodes[target_index];
+        NodeID middle_node_id = middle_nodes_table[location];
+
+        std::cout << "target_phantom f id: " << target_phantom.forward_segment_id.id
+                  << " r id: " << target_phantom.reverse_segment_id.id << std::endl;
+
+        if (middle_node_id == SPECIAL_NODEID) // takes care of one-ways
+        {
+            distances_table[location] = INVALID_EDGE_DISTANCE;
+            continue;
+        }
+
+        std::cout << "middle_node_id: " << middle_node_id << std::endl;
+
+        // // Step 1: Find path from source to middle node
+        PackedPath packed_path = mld::retrievePackedPathFromSingleManyToManyHeap<DIRECTION>(
+            query_heap,
+            middle_node_id); // packed_leg_from_source_to_middle
+
+        std::reverse(packed_path.begin(), packed_path.end());
+        std::cout << "packed_leg_from_source_to_middle: " << std::endl;
+        for (auto edge : packed_path)
+        {
+            std::cout << "from: " << std::get<0>(edge) << " to: " << std::get<1>(edge)
+                      << " from_clique_arc: " << std::get<2>(edge) << std::endl;
+        }
+        std::cout << std::endl << std::endl;
+
+        // Step 2: Find path from middle to target node
+        retrievePackedPathFromSearchSpace(middle_node_id,
+                                          column_idx,
+                                          search_space_with_buckets,
+                                          packed_path); // packed_leg_from_middle_to_target
+
+        std::cout << "packed_leg_from_middle_to_target: " << std::endl;
+        for (auto edge : packed_path)
+        {
+            std::cout << "from: " << std::get<0>(edge) << " to: " << std::get<1>(edge)
+                      << " from_clique_arc: " << std::get<2>(edge) << std::endl;
+        }
+        std::cout << std::endl << std::endl;
+    }
+}
+
 template <bool DIRECTION>
 std::pair<std::vector<EdgeDuration>, std::vector<EdgeDistance>>
 manyToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                  const DataFacade<Algorithm> &facade,
                  const std::vector<PhantomNode> &phantom_nodes,
                  const std::vector<std::size_t> &source_indices,
-                 const std::vector<std::size_t> &target_indices)
+                 const std::vector<std::size_t> &target_indices,
+                 const bool calculate_distance)
 {
     const auto number_of_sources = source_indices.size();
     const auto number_of_targets = target_indices.size();
@@ -471,30 +600,32 @@ manyToManySearch(SearchEngineData<Algorithm> &engine_working_data,
 
     std::vector<EdgeWeight> weights_table(number_of_entries, INVALID_EDGE_WEIGHT);
     std::vector<EdgeDuration> durations_table(number_of_entries, MAXIMAL_EDGE_DURATION);
-    std::vector<EdgeDistance> distances_table(number_of_entries, MAXIMAL_EDGE_DURATION);
+    std::vector<EdgeDistance> distances_table;
+    std::vector<NodeID> middle_nodes_table(number_of_entries, SPECIAL_NODEID);
 
     std::vector<NodeBucket> search_space_with_buckets;
+    std::vector<NodeID> packed_leg;
 
     // Populate buckets with paths from all accessible nodes to destinations via backward searches
     for (std::uint32_t column_idx = 0; column_idx < target_indices.size(); ++column_idx)
     {
         const auto index = target_indices[column_idx];
-        const auto &phantom = phantom_nodes[index];
+        const auto &target_phantom = phantom_nodes[index];
 
         engine_working_data.InitializeOrClearManyToManyThreadLocalStorage(
             facade.GetNumberOfNodes(), facade.GetMaxBorderNodeID() + 1);
         auto &query_heap = *(engine_working_data.many_to_many_heap);
 
         if (DIRECTION == FORWARD_DIRECTION)
-            insertTargetInHeap(query_heap, phantom);
+            insertTargetInHeap(query_heap, target_phantom);
         else
-            insertSourceInHeap(query_heap, phantom);
+            insertSourceInHeap(query_heap, target_phantom);
 
         // explore search space
         while (!query_heap.Empty())
         {
             backwardRoutingStep<DIRECTION>(
-                facade, column_idx, query_heap, search_space_with_buckets, phantom);
+                facade, column_idx, query_heap, search_space_with_buckets, target_phantom);
         }
     }
 
@@ -504,18 +635,19 @@ manyToManySearch(SearchEngineData<Algorithm> &engine_working_data,
     // Find shortest paths from sources to all accessible nodes
     for (std::uint32_t row_idx = 0; row_idx < source_indices.size(); ++row_idx)
     {
-        const auto index = source_indices[row_idx];
-        const auto &phantom = phantom_nodes[index];
+        const auto source_index = source_indices[row_idx];
+        const auto &source_phantom = phantom_nodes[source_index];
 
         // Clear heap and insert source nodes
         engine_working_data.InitializeOrClearManyToManyThreadLocalStorage(
             facade.GetNumberOfNodes(), facade.GetMaxBorderNodeID() + 1);
+
         auto &query_heap = *(engine_working_data.many_to_many_heap);
 
         if (DIRECTION == FORWARD_DIRECTION)
-            insertSourceInHeap(query_heap, phantom);
+            insertSourceInHeap(query_heap, source_phantom);
         else
-            insertTargetInHeap(query_heap, phantom);
+            insertTargetInHeap(query_heap, source_phantom);
 
         // Explore search space
         while (!query_heap.Empty())
@@ -528,8 +660,35 @@ manyToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                                           search_space_with_buckets,
                                           weights_table,
                                           durations_table,
-                                          phantom);
+                                          middle_nodes_table,
+                                          source_phantom);
         }
+        // find the shortcutted path
+        // unpack it
+        // calculate the distances while unpacking the path
+
+        if (calculate_distance)
+        {
+
+            std::cout << "source_phantom f id: " << source_phantom.forward_segment_id.id << " "
+                      << "source_phantom r id: " << source_phantom.reverse_segment_id.id
+                      << std::endl;
+
+            distances_table.resize(number_of_entries, INVALID_EDGE_DISTANCE);
+            calculateDistances<DIRECTION>(query_heap,
+                                          facade,
+                                          phantom_nodes,
+                                          target_indices,
+                                          row_idx,
+                                          source_index,
+                                          source_phantom,
+                                          number_of_sources,
+                                          number_of_targets,
+                                          search_space_with_buckets,
+                                          distances_table,
+                                          middle_nodes_table);
+        }
+        std::cout << std::endl;
     }
 
     return std::make_pair(durations_table, distances_table);
@@ -566,24 +725,40 @@ manyToManySearch(SearchEngineData<mld::Algorithm> &engine_working_data,
 
     if (source_indices.size() == 1)
     { // TODO: check if target_indices.size() == 1 and do a bi-directional search
-        return mld::oneToManySearch<FORWARD_DIRECTION>(
-            engine_working_data, facade, phantom_nodes, source_indices.front(), target_indices);
+        return mld::oneToManySearch<FORWARD_DIRECTION>(engine_working_data,
+                                                       facade,
+                                                       phantom_nodes,
+                                                       source_indices.front(),
+                                                       target_indices,
+                                                       calculate_distance);
     }
 
     if (target_indices.size() == 1)
     {
-        return mld::oneToManySearch<REVERSE_DIRECTION>(
-            engine_working_data, facade, phantom_nodes, target_indices.front(), source_indices);
+        return mld::oneToManySearch<REVERSE_DIRECTION>(engine_working_data,
+                                                       facade,
+                                                       phantom_nodes,
+                                                       target_indices.front(),
+                                                       source_indices,
+                                                       calculate_distance);
     }
 
     if (target_indices.size() < source_indices.size())
     {
-        return mld::manyToManySearch<REVERSE_DIRECTION>(
-            engine_working_data, facade, phantom_nodes, target_indices, source_indices);
+        return mld::manyToManySearch<REVERSE_DIRECTION>(engine_working_data,
+                                                        facade,
+                                                        phantom_nodes,
+                                                        target_indices,
+                                                        source_indices,
+                                                        calculate_distance);
     }
 
-    return mld::manyToManySearch<FORWARD_DIRECTION>(
-        engine_working_data, facade, phantom_nodes, source_indices, target_indices);
+    return mld::manyToManySearch<FORWARD_DIRECTION>(engine_working_data,
+                                                    facade,
+                                                    phantom_nodes,
+                                                    source_indices,
+                                                    target_indices,
+                                                    calculate_distance);
 }
 
 } // namespace routing_algorithms
