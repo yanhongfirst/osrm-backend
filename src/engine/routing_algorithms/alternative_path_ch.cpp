@@ -24,9 +24,33 @@ using namespace ch;
 
 namespace
 {
-const double constexpr VIAPATH_ALPHA = 0.25;   // alternative is local optimum on 25% sub-paths
-const double constexpr VIAPATH_EPSILON = 0.15; // alternative at most 15% longer
-const double constexpr VIAPATH_GAMMA = 0.75;   // alternative shares at most 75% with the shortest.
+struct Config
+{
+    Config()
+    {
+        auto overlap_str = std::getenv("OSRM_OVERLAP");
+        if (overlap_str != nullptr)
+            VIAPATH_ALPHA = std::stof(overlap_str) - 1.0;
+        auto at_most_longer_str = std::getenv("OSRM_AT_MOST_LONGER");
+        if (at_most_longer_str != nullptr)
+            VIAPATH_EPSILON = std::stof(at_most_longer_str);
+        auto at_least_different_str = std::getenv("OSRM_AT_LEAST_DIFFERENT");
+        if (at_least_different_str != nullptr)
+            VIAPATH_GAMMA = std::stof(at_least_different_str);
+        std::cout << "overlap:" << VIAPATH_ALPHA+1 << std::endl;
+        std::cout << "at most longer:" << VIAPATH_EPSILON << std::endl;
+        std::cout << "at least different:" << VIAPATH_GAMMA << std::endl;
+    }
+    static const Config &Get()
+    {
+        static Config config;
+        return config;
+    }
+
+    double VIAPATH_ALPHA = 0.25;   // alternative is local optimum on 25% sub-paths
+    double VIAPATH_EPSILON = 0.15; // alternative at most 15% longer
+    double VIAPATH_GAMMA = 0.75;   // alternative shares at most 75% with the shortest.
+};
 
 using QueryHeap = SearchEngineData<Algorithm>::QueryHeap;
 using SearchSpaceEdge = std::pair<NodeID, NodeID>;
@@ -66,7 +90,7 @@ void alternativeRoutingStep(const DataFacade<Algorithm> &facade,
     const EdgeWeight weight = forward_heap.GetKey(node);
 
     const auto scaled_weight =
-        static_cast<EdgeWeight>((weight + min_edge_offset) / (1. + VIAPATH_EPSILON));
+        static_cast<EdgeWeight>((weight + min_edge_offset) / (1. + Config::Get().VIAPATH_EPSILON));
     if ((INVALID_EDGE_WEIGHT != *upper_bound_to_shortest_path_weight) &&
         (scaled_weight > *upper_bound_to_shortest_path_weight))
     {
@@ -396,7 +420,7 @@ bool viaNodeCandidatePassesTTest(SearchEngineData<Algorithm> &engine_working_dat
     {
         return false;
     }
-    const EdgeWeight T_threshold = static_cast<EdgeWeight>(VIAPATH_ALPHA * weight_of_shortest_path);
+    const EdgeWeight T_threshold = static_cast<EdgeWeight>(Config::Get().VIAPATH_ALPHA * weight_of_shortest_path);
     EdgeWeight unpacked_until_weight = 0;
 
     std::stack<SearchSpaceEdge> unpack_stack;
@@ -724,12 +748,12 @@ InternalManyRoutesResult alternativePathSearch(SearchEngineData<Algorithm> &engi
         const EdgeWeight approximated_weight =
             forward_heap1.GetKey(node) + reverse_heap1.GetKey(node);
         const bool weight_passes =
-            (approximated_weight < upper_bound_to_shortest_path_weight * (1 + VIAPATH_EPSILON));
+            (approximated_weight < upper_bound_to_shortest_path_weight * (1 + Config::Get().VIAPATH_EPSILON));
         const bool sharing_passes =
-            (approximated_sharing <= upper_bound_to_shortest_path_weight * VIAPATH_GAMMA);
+            (approximated_sharing <= upper_bound_to_shortest_path_weight * Config::Get().VIAPATH_GAMMA);
         const bool stretch_passes =
             (approximated_weight - approximated_sharing) <
-            ((1. + VIAPATH_EPSILON) * (upper_bound_to_shortest_path_weight - approximated_sharing));
+            ((1. + Config::Get().VIAPATH_EPSILON) * (upper_bound_to_shortest_path_weight - approximated_sharing));
 
         if (weight_passes && sharing_passes && stretch_passes)
         {
@@ -759,9 +783,9 @@ InternalManyRoutesResult alternativePathSearch(SearchEngineData<Algorithm> &engi
                                          packed_shortest_path,
                                          min_edge_offset);
         const EdgeWeight maximum_allowed_sharing =
-            static_cast<EdgeWeight>(upper_bound_to_shortest_path_weight * VIAPATH_GAMMA);
+            static_cast<EdgeWeight>(upper_bound_to_shortest_path_weight * Config::Get().VIAPATH_GAMMA);
         if (sharing_of_via_path <= maximum_allowed_sharing &&
-            weight_of_via_path <= upper_bound_to_shortest_path_weight * (1 + VIAPATH_EPSILON))
+            weight_of_via_path <= upper_bound_to_shortest_path_weight * (1 + Config::Get().VIAPATH_EPSILON))
         {
             ranked_candidates_list.emplace_back(node, weight_of_via_path, sharing_of_via_path);
         }

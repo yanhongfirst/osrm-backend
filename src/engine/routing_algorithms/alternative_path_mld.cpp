@@ -34,21 +34,53 @@ using Facade = DataFacade<Algorithm>;
 namespace
 {
 
-// Alternative paths candidate via nodes are taken from overlapping search spaces.
-// Overlapping by a third guarantees us taking candidate nodes "from the middle".
-const constexpr auto kSearchSpaceOverlapFactor = 1.33;
-// Unpack n-times more candidate paths to run high-quality checks on.
-// Unpacking paths yields higher chance to find good alternatives but is also expensive.
-const constexpr auto kAlternativesToUnpackFactor = 2.0;
-// Alternative paths length requirement (stretch).
-// At most 25% longer then the shortest path.
-const constexpr auto kAtMostLongerBy = 0.25;
-// Alternative paths similarity requirement (sharing).
-// At least 15% different than the shortest path.
-const constexpr auto kAtLeastDifferentBy = 0.85;
-// Alternative paths are still reasonable around the via node candidate (local optimality).
-// At least optimal around 10% sub-paths around the via node candidate.
-const /*constexpr*/ auto kAtLeastOptimalAroundViaBy = 0.10;
+struct Config
+{
+    Config()
+    {
+        auto overlap_str = std::getenv("OSRM_OVERLAP");
+        if (overlap_str != nullptr)
+            kSearchSpaceOverlapFactor = std::stof(overlap_str);
+        auto to_unpack_str = std::getenv("OSRM_TO_UNPACK");
+        if (to_unpack_str != nullptr)
+            kAlternativesToUnpackFactor = std::stof(to_unpack_str);
+        auto at_most_longer_str = std::getenv("OSRM_AT_MOST_LONGER");
+        if (at_most_longer_str != nullptr)
+            kAtMostLongerBy = std::stof(at_most_longer_str);
+        auto at_least_different_str = std::getenv("OSRM_AT_LEAST_DIFFERENT");
+        if (at_least_different_str != nullptr)
+            kAtLeastDifferentBy = std::stof(at_least_different_str);
+        auto at_least_optimal_ptr = std::getenv("OSRM_AT_LEAST_OPTIMAL");
+        if (at_least_optimal_ptr != nullptr)
+            kAtLeastOptimalAroundViaBy = std::stof(at_least_optimal_ptr);
+        std::cout << "overlap:" << kSearchSpaceOverlapFactor << std::endl;
+        std::cout << "at most longer:" << kAtMostLongerBy << std::endl;
+        std::cout << "at least different:" << kAtLeastDifferentBy << std::endl;
+        std::cout << "at least optimal:" << kAtLeastOptimalAroundViaBy << std::endl;
+    }
+    static const Config &Get()
+    {
+        static Config config;
+        return config;
+    }
+
+    // Alternative paths candidate via nodes are taken from overlapping search spaces.
+    // Overlapping by a third guarantees us taking candidate nodes "from the middle".
+    double kSearchSpaceOverlapFactor = 1.33;
+    // Unpack n-times more candidate paths to run high-quality checks on.
+    // Unpacking paths yields higher chance to find good alternatives but is also expensive.
+    double kAlternativesToUnpackFactor = 2.0;
+    // Alternative paths length requirement (stretch).
+    // At most 25% longer then the shortest path.
+    double kAtMostLongerBy = 0.25;
+    // Alternative paths similarity requirement (sharing).
+    // At least 15% different than the shortest path.
+    double kAtLeastDifferentBy = 0.85;
+    // Alternative paths are still reasonable around the via node candidate (local optimality).
+    // At least optimal around 10% sub-paths around the via node candidate.
+    double kAtLeastOptimalAroundViaBy = 0.10;
+};
+
 // gcc 7.1 ICE ^
 
 // Represents a via middle node where forward (from s) and backward (from t)
@@ -129,7 +161,7 @@ double scaledAtMostLongerByFactorBasedOnDuration(EdgeWeight duration)
     // Todo: instead of a piecewise constant function should this be a continuous function?
     // At the moment there are "hard" jump edge cases when crossing the thresholds.
 
-    auto scaledAtMostLongerBy = kAtMostLongerBy;
+    auto scaledAtMostLongerBy = Config::Get().kAtMostLongerBy;
 
     const constexpr auto minutes = 60.;
     const constexpr auto hours = 60. * minutes;
@@ -226,7 +258,7 @@ RandIt filterPackedPathsByCellSharing(RandIt first, RandIt last, const Partition
         return last;
 
     std::unordered_set<CellID> cells;
-    cells.reserve(size * (shortest_path.path.size() + 1) * (1. + kAtMostLongerBy));
+    cells.reserve(size * (shortest_path.path.size() + 1) * (1. + Config::Get().kAtMostLongerBy));
 
     cells.insert(get_cell(std::get<0>(shortest_path.path.front())));
     for (const auto &edge : shortest_path.path)
@@ -253,7 +285,7 @@ RandIt filterPackedPathsByCellSharing(RandIt first, RandIt last, const Partition
 
         const auto sharing = 1. - difference;
 
-        if (sharing > kAtLeastDifferentBy)
+        if (sharing > Config::Get().kAtLeastDifferentBy)
         {
             return true;
         }
@@ -376,7 +408,7 @@ RandIt filterPackedPathsByLocalOptimality(const WeightedViaNodePackedPath &path,
         const auto detour_length = forward_heap.GetKey(via) - forward_heap.GetKey(a) +
                                    reverse_heap.GetKey(via) - reverse_heap.GetKey(b);
 
-        return plateaux_length < kAtLeastOptimalAroundViaBy * detour_length;
+        return plateaux_length < Config::Get().kAtLeastOptimalAroundViaBy * detour_length;
     };
 
     return std::remove_if(first, last, is_not_locally_optimal);
@@ -400,7 +432,7 @@ template <typename RandIt> RandIt filterUnpackedPathsBySharing(RandIt first, Ran
         return last;
 
     std::unordered_set<EdgeID> edges;
-    edges.reserve(size * shortest_path.edges.size() * (1. + kAtMostLongerBy));
+    edges.reserve(size * shortest_path.edges.size() * (1. + Config::Get().kAtMostLongerBy));
 
     edges.insert(begin(shortest_path.edges), begin(shortest_path.edges));
 
@@ -420,7 +452,7 @@ template <typename RandIt> RandIt filterUnpackedPathsBySharing(RandIt first, Ran
 
         const auto sharing = 1. - difference;
 
-        if (sharing > kAtLeastDifferentBy)
+        if (sharing > Config::Get().kAtLeastDifferentBy)
         {
             return true;
         }
@@ -605,7 +637,7 @@ makeCandidateVias(SearchEngineData<Algorithm> &search_engine_data,
     while (forward_heap.Size() + reverse_heap.Size() > 0)
     {
         if (shortest_path_weight != INVALID_EDGE_WEIGHT)
-            overlap_weight = shortest_path_weight * kSearchSpaceOverlapFactor;
+            overlap_weight = shortest_path_weight * Config::Get().kSearchSpaceOverlapFactor;
 
         // Termination criteria - when we have a shortest path this will guarantee for our overlap.
         const bool keep_going = forward_heap_min + reverse_heap_min < overlap_weight;
@@ -693,7 +725,7 @@ InternalManyRoutesResult alternativePathSearch(SearchEngineData<Algorithm> &sear
 {
     const auto max_number_of_alternatives = number_of_alternatives;
     const auto max_number_of_alternatives_to_unpack =
-        kAlternativesToUnpackFactor * max_number_of_alternatives;
+        Config::Get().kAlternativesToUnpackFactor * max_number_of_alternatives;
     BOOST_ASSERT(max_number_of_alternatives > 0);
     BOOST_ASSERT(max_number_of_alternatives_to_unpack >= max_number_of_alternatives);
 
