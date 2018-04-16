@@ -3,7 +3,7 @@
 set -e
 
 REQUESTS=$1
-OUTPUT_DIR=$2
+OUTPUT_PATH=$2
 
 for overlap in "1.25" "1.33" "1.50" "1.75"; do
     for unpack in "2" "3" "4"; do
