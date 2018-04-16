@@ -17,9 +17,9 @@ for overlap in "1.25" "1.33" "1.50" "1.75"; do
                     ./scripts/osrm-runner.js -q $REQUESTS -f "$.routes..geometry" > $OUTPUT && killall osrm-routed
                     case $OUTPUT_PATH in
                         s3*)
-                            aws s3 cp $OUTPUT $OUTPUT_DIR;;
+                            aws s3 cp $OUTPUT $OUTPUT_PATH;;
                         *)
-                            cp $OUTPUT $OUTPUT_DIR;;
+                            cp $OUTPUT $OUTPUT_PATH;;
                     esac
                 done
             done
@@ -37,9 +37,9 @@ for overlap in "1.25" "1.33" "1.50" "1.75"; do
             ./scripts/osrm-runner.js -q $REQUESTS -f "$.routes..geometry" > $OUTPUT && killall osrm-routed
             case $OUTPUT_PATH in
                 s3*)
-                    aws s3 cp $OUTPUT $OUTPUT_DIR;;
+                    aws s3 cp $OUTPUT $OUTPUT_PATH;;
                 *)
-                    cp $OUTPUT $OUTPUT_DIR;;
+                    cp $OUTPUT $OUTPUT_PATH;;
             esac
         done
     done
