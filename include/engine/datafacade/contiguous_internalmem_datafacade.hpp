@@ -240,32 +240,38 @@ class ContiguousInternalMemoryDataFacadeBase : public BaseDataFacade
 
     NodeForwardRange GetUncompressedForwardGeometry(const EdgeID id) const override final
     {
-        return segment_data.GetForwardGeometry(id);
+        auto r = segment_data.GetForwardGeometry(id);
+        return {r.begin(), r.end()};
     }
 
     NodeReverseRange GetUncompressedReverseGeometry(const EdgeID id) const override final
     {
-        return segment_data.GetReverseGeometry(id);
+        auto r = segment_data.GetReverseGeometry(id);
+        return {r.begin(), r.end()};
     }
 
     DurationForwardRange GetUncompressedForwardDurations(const EdgeID id) const override final
     {
-        return segment_data.GetForwardDurations(id);
+        auto r = segment_data.GetForwardDurations(id);
+        return {r.begin(), r.end()};
     }
 
     DurationReverseRange GetUncompressedReverseDurations(const EdgeID id) const override final
     {
-        return segment_data.GetReverseDurations(id);
+        auto r = segment_data.GetReverseDurations(id);
+        return {r.begin(), r.end()};
     }
 
     WeightForwardRange GetUncompressedForwardWeights(const EdgeID id) const override final
     {
-        return segment_data.GetForwardWeights(id);
+        auto r = segment_data.GetForwardWeights(id);
+        return {r.begin(), r.end()};
     }
 
     WeightReverseRange GetUncompressedReverseWeights(const EdgeID id) const override final
     {
-        return segment_data.GetReverseWeights(id);
+        auto r = segment_data.GetReverseWeights(id);
+        return {r.begin(), r.end()};
     }
 
     // Returns the data source ids that were used to supply the edge

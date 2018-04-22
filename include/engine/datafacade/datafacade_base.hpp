@@ -53,17 +53,14 @@ class BaseDataFacade
   public:
     using RTreeLeaf = extractor::EdgeBasedNodeSegment;
 
-    using NodeForwardRange =
-        boost::iterator_range<extractor::SegmentDataView::SegmentNodeVector::const_iterator>;
-    using NodeReverseRange = boost::reversed_range<const NodeForwardRange>;
+    using NodeForwardRange = std::vector<NodeID>;
+    using NodeReverseRange = std::vector<NodeID>;
 
-    using WeightForwardRange =
-        boost::iterator_range<extractor::SegmentDataView::SegmentWeightVector::const_iterator>;
-    using WeightReverseRange = boost::reversed_range<const WeightForwardRange>;
+    using WeightForwardRange = std::vector<EdgeWeight>;
+    using WeightReverseRange = std::vector<EdgeWeight>;
 
-    using DurationForwardRange =
-        boost::iterator_range<extractor::SegmentDataView::SegmentDurationVector::const_iterator>;
-    using DurationReverseRange = boost::reversed_range<const DurationForwardRange>;
+    using DurationForwardRange = std::vector<EdgeDuration>;
+    using DurationReverseRange = std::vector<EdgeDuration>;
 
     using DatasourceForwardRange =
         boost::iterator_range<extractor::SegmentDataView::SegmentDatasourceVector::const_iterator>;
