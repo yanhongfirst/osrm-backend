@@ -6,16 +6,19 @@ Feature: Basic Distance Matrix
         Given the profile "testbot"
         And the partition extra arguments "--small-component-size 1 --max-cell-sizes 2,4,8,16"
 
-    @ch
     Scenario: Testbot - Travel distance matrix of minimal network only
         Given the node map
             """
-            a b c d e f g h i j k l m n o p q r s t u v x y z
+            a b
             """
 
         And the ways
             | nodes |
-            | abcdefghijklmnopqrstuvxyz|
+            | ab    |
+
+        When I route I should get
+            | from | to | distance |
+            | a    | b  | 100m     |
 
         When I request a travel distance matrix I should get
             |   | a      | b      |
@@ -160,6 +163,10 @@ Feature: Basic Distance Matrix
             | ad    |
             | be    |
             | cf    |
+
+        When I route I should get
+            | from | to | distance |
+            | a    | f  | 299.9m    |
 
         When I request a travel distance matrix I should get
             |   | a      | b      | e      | f      |

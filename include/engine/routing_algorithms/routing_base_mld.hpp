@@ -447,9 +447,153 @@ UnpackedPath search(SearchEngineData<Algorithm> &engine_working_data,
             unpacked_edges.insert(unpacked_edges.end(), subpath_edges.begin(), subpath_edges.end());
         }
     }
+    std::cout << "unpacked_nodes: ";
+    for (auto node : unpacked_nodes) {
+        std::cout << node << ", ";
+    }
+    std::cout << std::endl;
+    return std::make_tuple(weight, std::move(unpacked_nodes), std::move(unpacked_edges));
+}
+
+// With (s, middle, t) we trace back the paths middle -> s and middle -> t.
+// This gives us a packed path (node ids) from the base graph around s and t,
+// and overlay node ids otherwise. We then have to unpack the overlay clique
+// edges by recursively descending unpacking the path down to the base graph.
+
+using UnpackedNodes = std::vector<NodeID>;
+using UnpackedEdges = std::vector<EdgeID>;
+using UnpackedPath = std::tuple<EdgeWeight, UnpackedNodes, UnpackedEdges>;
+
+template <typename Algorithm, typename... Args>
+UnpackedPath unpackPathAndCalculateDistance(SearchEngineData<Algorithm> &engine_working_data,
+                    const DataFacade<Algorithm> &facade,
+                    typename SearchEngineData<Algorithm>::QueryHeap &forward_heap,
+                    typename SearchEngineData<Algorithm>::QueryHeap &reverse_heap,
+                    const bool force_loop_forward,
+                    const bool force_loop_reverse,
+                    EdgeWeight weight_upper_bound,
+                    Args... args)
+{
+    if (forward_heap.Empty() || reverse_heap.Empty())
+    {
+        return std::make_tuple(INVALID_EDGE_WEIGHT, std::vector<NodeID>(), std::vector<EdgeID>());
+    }
+
+    const auto &partition = facade.GetMultiLevelPartition();
+
+    BOOST_ASSERT(!forward_heap.Empty() && forward_heap.MinKey() < INVALID_EDGE_WEIGHT);
+    BOOST_ASSERT(!reverse_heap.Empty() && reverse_heap.MinKey() < INVALID_EDGE_WEIGHT);
+
+    // run two-Target Dijkstra routing step.
+    NodeID middle = SPECIAL_NODEID;
+    EdgeWeight weight = weight_upper_bound;
+    EdgeWeight forward_heap_min = forward_heap.MinKey();
+    EdgeWeight reverse_heap_min = reverse_heap.MinKey();
+    while (forward_heap.Size() + reverse_heap.Size() > 0 &&
+           forward_heap_min + reverse_heap_min < weight)
+    {
+
+        if (!forward_heap.Empty())
+        {
+            routingStep<FORWARD_DIRECTION>(facade,
+                                           forward_heap,
+                                           reverse_heap,
+                                           middle,
+                                           weight,
+                                           force_loop_forward,
+                                           force_loop_reverse,
+                                           args...);
+            if (!forward_heap.Empty())
+                forward_heap_min = forward_heap.MinKey();
+        }
+        if (!reverse_heap.Empty())
+        {
+            routingStep<REVERSE_DIRECTION>(facade,
+                                           reverse_heap,
+                                           forward_heap,
+                                           middle,
+                                           weight,
+                                           force_loop_reverse,
+                                           force_loop_forward,
+                                           args...);
+            if (!reverse_heap.Empty())
+                reverse_heap_min = reverse_heap.MinKey();
+        }
+    };
+
+    // No path found for both target nodes?
+    if (weight >= weight_upper_bound || SPECIAL_NODEID == middle)
+    {
+        return std::make_tuple(INVALID_EDGE_WEIGHT, std::vector<NodeID>(), std::vector<EdgeID>());
+    }
+
+    // Get packed path as edges {from node ID, to node ID, from_clique_arc}
+    auto packed_path = retrievePackedPathFromHeap(forward_heap, reverse_heap, middle);
+
+    // Beware the edge case when start, middle, end are all the same.
+    // In this case we return a single node, no edges. We also don't unpack.
+    const NodeID source_node = !packed_path.empty() ? std::get<0>(packed_path.front()) : middle;
+
+    // Unpack path
+    std::vector<NodeID> unpacked_nodes;
+    std::vector<EdgeID> unpacked_edges;
+    unpacked_nodes.reserve(packed_path.size());
+    unpacked_edges.reserve(packed_path.size());
+
+    unpacked_nodes.push_back(source_node);
+
+    for (auto const &packed_edge : packed_path)
+    {
+
+        NodeID source, target;
+        bool overlay_edge;
+        std::tie(source, target, overlay_edge) = packed_edge;
+        if (!overlay_edge)
+        { // a base graph edge
+            unpacked_nodes.push_back(target);
+            unpacked_edges.push_back(facade.FindEdge(source, target));
+        }
+        else
+        { // an overlay graph edge
+            LevelID level = getNodeQueryLevel(partition, source, args...);
+            CellID parent_cell_id = partition.GetCell(level, source);
+            BOOST_ASSERT(parent_cell_id == partition.GetCell(level, target));
+
+            LevelID sublevel = level - 1;
+
+            // Here heaps can be reused, let's go deeper!
+            forward_heap.Clear();
+            reverse_heap.Clear();
+            forward_heap.Insert(source, 0, {source});
+            reverse_heap.Insert(target, 0, {target});
+
+            // TODO: when structured bindings will be allowed change to
+            // auto [subpath_weight, subpath_source, subpath_target, subpath] = ...
+            EdgeWeight subpath_weight;
+            std::vector<NodeID> subpath_nodes;
+            std::vector<EdgeID> subpath_edges;
+            std::tie(subpath_weight, subpath_nodes, subpath_edges) = unpackPathAndCalculateDistance(engine_working_data,
+                                                                            facade,
+                                                                            forward_heap,
+                                                                            reverse_heap,
+                                                                            force_loop_forward,
+                                                                            force_loop_reverse,
+                                                                            INVALID_EDGE_WEIGHT,
+                                                                            sublevel,
+                                                                            parent_cell_id);
+            BOOST_ASSERT(!subpath_edges.empty());
+            BOOST_ASSERT(subpath_nodes.size() > 1);
+            BOOST_ASSERT(subpath_nodes.front() == source);
+            BOOST_ASSERT(subpath_nodes.back() == target);
+            unpacked_nodes.insert(
+                unpacked_nodes.end(), std::next(subpath_nodes.begin()), subpath_nodes.end());
+            unpacked_edges.insert(unpacked_edges.end(), subpath_edges.begin(), subpath_edges.end());
+        }
+    }
 
     return std::make_tuple(weight, std::move(unpacked_nodes), std::move(unpacked_edges));
 }
+
 
 // Alias to be compatible with the CH-based search
 template <typename Algorithm>
