@@ -544,44 +544,24 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
         const auto &target_phantom = phantom_nodes[target_index];
         NodeID middle_node_id = middle_nodes_table[location];
 
-        std::cout << "target_phantom f id: " << target_phantom.forward_segment_id.id
-                  << " r id: " << target_phantom.reverse_segment_id.id << std::endl;
-
         if (middle_node_id == SPECIAL_NODEID) // takes care of one-ways
         {
             distances_table[location] = INVALID_EDGE_DISTANCE;
             continue;
         }
 
-        std::cout << "middle_node_id: " << middle_node_id << std::endl;
-
-        // // Step 1: Find path from source to middle node
+        // Step 1: Find path from source to middle node
         PackedPath packed_path = mld::retrievePackedPathFromSingleManyToManyHeap<DIRECTION>(
             query_heap,
             middle_node_id); // packed_leg_from_source_to_middle
 
         std::reverse(packed_path.begin(), packed_path.end());
-        std::cout << "packed_leg_from_source_to_middle: " << std::endl;
-        for (auto edge : packed_path)
-        {
-            std::cout << "from: " << std::get<0>(edge) << " to: " << std::get<1>(edge)
-                      << " from_clique_arc: " << std::get<2>(edge) << std::endl;
-        }
-        std::cout << std::endl << std::endl;
 
         // Step 2: Find path from middle to target node
         retrievePackedPathFromSearchSpace(middle_node_id,
                                           column_idx,
                                           search_space_with_buckets,
                                           packed_path); // packed_leg_from_middle_to_target
-
-        std::cout << "packed_leg_from_middle_to_target: " << std::endl;
-        for (auto edge : packed_path)
-        {
-            std::cout << "from: " << std::get<0>(edge) << " to: " << std::get<1>(edge)
-                      << " from_clique_arc: " << std::get<2>(edge) << std::endl;
-        }
-        std::cout << std::endl << std::endl;
     }
 }
 
@@ -663,17 +643,9 @@ manyToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                                           middle_nodes_table,
                                           source_phantom);
         }
-        // find the shortcutted path
-        // unpack it
-        // calculate the distances while unpacking the path
 
         if (calculate_distance)
         {
-
-            std::cout << "source_phantom f id: " << source_phantom.forward_segment_id.id << " "
-                      << "source_phantom r id: " << source_phantom.reverse_segment_id.id
-                      << std::endl;
-
             distances_table.resize(number_of_entries, INVALID_EDGE_DISTANCE);
             calculateDistances<DIRECTION>(query_heap,
                                           facade,
@@ -688,7 +660,6 @@ manyToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                                           distances_table,
                                           middle_nodes_table);
         }
-        std::cout << std::endl;
     }
 
     return std::make_pair(durations_table, distances_table);
