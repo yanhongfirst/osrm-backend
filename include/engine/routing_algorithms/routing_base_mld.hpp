@@ -472,66 +472,12 @@ UnpackedPath unpackPathAndCalculateDistance(SearchEngineData<Algorithm> &engine_
                     const bool force_loop_forward,
                     const bool force_loop_reverse,
                     EdgeWeight weight_upper_bound,
+                    PackedPath packed_path,
+                    NodeID middle,
                     Args... args)
 {
-    if (forward_heap.Empty() || reverse_heap.Empty())
-    {
-        return std::make_tuple(INVALID_EDGE_WEIGHT, std::vector<NodeID>(), std::vector<EdgeID>());
-    }
-
-    const auto &partition = facade.GetMultiLevelPartition();
-
-    BOOST_ASSERT(!forward_heap.Empty() && forward_heap.MinKey() < INVALID_EDGE_WEIGHT);
-    BOOST_ASSERT(!reverse_heap.Empty() && reverse_heap.MinKey() < INVALID_EDGE_WEIGHT);
-
-    // run two-Target Dijkstra routing step.
-    NodeID middle = SPECIAL_NODEID;
     EdgeWeight weight = weight_upper_bound;
-    EdgeWeight forward_heap_min = forward_heap.MinKey();
-    EdgeWeight reverse_heap_min = reverse_heap.MinKey();
-    while (forward_heap.Size() + reverse_heap.Size() > 0 &&
-           forward_heap_min + reverse_heap_min < weight)
-    {
-
-        if (!forward_heap.Empty())
-        {
-            routingStep<FORWARD_DIRECTION>(facade,
-                                           forward_heap,
-                                           reverse_heap,
-                                           middle,
-                                           weight,
-                                           force_loop_forward,
-                                           force_loop_reverse,
-                                           args...);
-            if (!forward_heap.Empty())
-                forward_heap_min = forward_heap.MinKey();
-        }
-        if (!reverse_heap.Empty())
-        {
-            routingStep<REVERSE_DIRECTION>(facade,
-                                           reverse_heap,
-                                           forward_heap,
-                                           middle,
-                                           weight,
-                                           force_loop_reverse,
-                                           force_loop_forward,
-                                           args...);
-            if (!reverse_heap.Empty())
-                reverse_heap_min = reverse_heap.MinKey();
-        }
-    };
-
-    // No path found for both target nodes?
-    if (weight >= weight_upper_bound || SPECIAL_NODEID == middle)
-    {
-        return std::make_tuple(INVALID_EDGE_WEIGHT, std::vector<NodeID>(), std::vector<EdgeID>());
-    }
-
-    // Get packed path as edges {from node ID, to node ID, from_clique_arc}
-    auto packed_path = retrievePackedPathFromHeap(forward_heap, reverse_heap, middle);
-
-    // Beware the edge case when start, middle, end are all the same.
-    // In this case we return a single node, no edges. We also don't unpack.
+    const auto &partition = facade.GetMultiLevelPartition();
     const NodeID source_node = !packed_path.empty() ? std::get<0>(packed_path.front()) : middle;
 
     // Unpack path
@@ -544,7 +490,6 @@ UnpackedPath unpackPathAndCalculateDistance(SearchEngineData<Algorithm> &engine_
 
     for (auto const &packed_edge : packed_path)
     {
-
         NodeID source, target;
         bool overlay_edge;
         std::tie(source, target, overlay_edge) = packed_edge;
@@ -572,7 +517,7 @@ UnpackedPath unpackPathAndCalculateDistance(SearchEngineData<Algorithm> &engine_
             EdgeWeight subpath_weight;
             std::vector<NodeID> subpath_nodes;
             std::vector<EdgeID> subpath_edges;
-            std::tie(subpath_weight, subpath_nodes, subpath_edges) = unpackPathAndCalculateDistance(engine_working_data,
+            std::tie(subpath_weight, subpath_nodes, subpath_edges) = search(engine_working_data,
                                                                             facade,
                                                                             forward_heap,
                                                                             reverse_heap,
@@ -590,7 +535,11 @@ UnpackedPath unpackPathAndCalculateDistance(SearchEngineData<Algorithm> &engine_
             unpacked_edges.insert(unpacked_edges.end(), subpath_edges.begin(), subpath_edges.end());
         }
     }
-
+    std::cout << "unpacked_nodes: ";
+    for (auto node : unpacked_nodes) {
+        std::cout << node << ", ";
+    }
+    std::cout << std::endl;
     return std::make_tuple(weight, std::move(unpacked_nodes), std::move(unpacked_edges));
 }
 
