@@ -514,8 +514,6 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
                         const std::vector<NodeID> &middle_nodes_table,
                         SearchEngineData<mld::Algorithm> &engine_working_data)
 {
-    (void)phantom_nodes;
-
     for (unsigned column_idx = 0; column_idx < number_of_targets; ++column_idx)
     {
         const auto location = DIRECTION == FORWARD_DIRECTION
@@ -563,7 +561,7 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
         // }
 
         //Step 3: Unpack the packed path
-
+        std::cout << "packed_path.size() " << packed_path.size() << std::endl;
         if (!packed_path.empty()) {
             engine_working_data.InitializeOrClearFirstThreadLocalStorage(
             facade.GetNumberOfNodes(), facade.GetMaxBorderNodeID() + 1);
@@ -574,14 +572,10 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
             auto &reverse_heap = *engine_working_data.reverse_heap_1;
             forward_heap.Insert(source, 0, {source});
             reverse_heap.Insert(target, 0, {target});
-            // const auto &partition = facade.GetMultiLevelPartition(); // WHAT IS A PARTITION?
-            // const auto level = getNodeQueryLevel(partition, source, PhantomNodes{source_phantom, target_phantom});
-            // std::cout << "level" << level <<std::endl;
-            // CellID parent_cell_id = partition.GetCell(level, source);
 
             EdgeWeight weight;
-            std::vector<NodeID> unpacked_nodes;
-            std::vector<EdgeID> unpacked_edges;
+            std::vector<NodeID> nodes;
+            std::vector<EdgeID> edges;
             std::tie(weight, nodes, edges) = unpackPathAndCalculateDistance(engine_working_data,
                         facade,
                         forward_heap,
@@ -589,6 +583,8 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
                         force_loop_forward,
                         force_loop_reverse,
                         INVALID_EDGE_WEIGHT,
+                        packed_path,
+                        middle_node_id,
                         PhantomNodes{source_phantom, target_phantom});
 
             std::cout << "unpacked_nodes: ";
@@ -598,9 +594,11 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
             std::cout << std::endl;
             auto annotation = 0.0;
             for (auto node : nodes) {
+                std::cout << "computeEdgeDistance(facade, node) node " << node << std::endl;
                 annotation+= computeEdgeDistance(facade, node);
             }
             distances_table[location] = annotation;
+
 
             // check the direction of travel to figure out how to calculate the offset to/from
             // the source/target
@@ -652,7 +650,7 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
                 // entry 0---1---2---3---   <-- 3 is exit node
                 EdgeDistance offset =
                     target_phantom.GetForwardDistance() - source_phantom.GetForwardDistance();
-                distances_table[location] += offset;
+                distances_table[location] = offset;
             }
             else
             {
@@ -663,7 +661,7 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
                 // entry 0---1---2---3---   <-- 3 is exit node
                 EdgeDistance offset =
                     target_phantom.GetReverseDistance() - source_phantom.GetReverseDistance();
-                distances_table[location] += offset;
+                distances_table[location] = offset;
             }
         }
         packed_path.clear();
