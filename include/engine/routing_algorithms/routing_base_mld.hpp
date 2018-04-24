@@ -448,7 +448,8 @@ UnpackedPath search(SearchEngineData<Algorithm> &engine_working_data,
         }
     }
     std::cout << "unpacked_nodes: ";
-    for (auto node : unpacked_nodes) {
+    for (auto node : unpacked_nodes)
+    {
         std::cout << node << ", ";
     }
     std::cout << std::endl;
@@ -465,16 +466,17 @@ using UnpackedEdges = std::vector<EdgeID>;
 using UnpackedPath = std::tuple<EdgeWeight, UnpackedNodes, UnpackedEdges>;
 
 template <typename Algorithm, typename... Args>
-UnpackedPath unpackPathAndCalculateDistance(SearchEngineData<Algorithm> &engine_working_data,
-                    const DataFacade<Algorithm> &facade,
-                    typename SearchEngineData<Algorithm>::QueryHeap &forward_heap,
-                    typename SearchEngineData<Algorithm>::QueryHeap &reverse_heap,
-                    const bool force_loop_forward,
-                    const bool force_loop_reverse,
-                    EdgeWeight weight_upper_bound,
-                    PackedPath packed_path,
-                    NodeID middle,
-                    Args... args)
+UnpackedPath
+unpackPathAndCalculateDistance(SearchEngineData<Algorithm> &engine_working_data,
+                               const DataFacade<Algorithm> &facade,
+                               typename SearchEngineData<Algorithm>::QueryHeap &forward_heap,
+                               typename SearchEngineData<Algorithm>::QueryHeap &reverse_heap,
+                               const bool force_loop_forward,
+                               const bool force_loop_reverse,
+                               EdgeWeight weight_upper_bound,
+                               PackedPath packed_path,
+                               NodeID middle,
+                               Args... args)
 {
     EdgeWeight weight = weight_upper_bound;
     const auto &partition = facade.GetMultiLevelPartition();
@@ -536,13 +538,13 @@ UnpackedPath unpackPathAndCalculateDistance(SearchEngineData<Algorithm> &engine_
         }
     }
     std::cout << "unpacked_nodes: ";
-    for (auto node : unpacked_nodes) {
+    for (auto node : unpacked_nodes)
+    {
         std::cout << node << ", ";
     }
     std::cout << std::endl;
     return std::make_tuple(weight, std::move(unpacked_nodes), std::move(unpacked_edges));
 }
-
 
 // Alias to be compatible with the CH-based search
 template <typename Algorithm>

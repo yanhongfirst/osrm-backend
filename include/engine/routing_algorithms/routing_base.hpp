@@ -408,7 +408,6 @@ InternalRouteResult extractRoute(const DataFacade<AlgorithmT> &facade,
 
 template <typename FacadeT> EdgeDistance computeEdgeDistance(const FacadeT &facade, NodeID node_id)
 {
-    std::cout << "node_id " << node_id << std::endl;
     const auto geometry_index = facade.GetGeometryIndex(node_id);
 
     EdgeDistance total_distance = 0.0;

@@ -166,7 +166,9 @@ Feature: Basic Distance Matrix
 
         When I route I should get
             | from | to | distance |
-            | a    | f  | 299.9m    |
+            | a    | b  | 100m     |
+            | a    | e  | 200m     |
+            | a    | f  | 299.9m   |
 
         When I request a travel distance matrix I should get
             |   | a      | b      | e      | f      |
