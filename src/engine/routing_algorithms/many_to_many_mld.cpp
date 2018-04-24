@@ -560,14 +560,15 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
         //         packed_path.push_back(packed_path.front());
         // }
 
-        //Step 3: Unpack the packed path
+        // Step 3: Unpack the packed path
         std::cout << "packed_path.size() " << packed_path.size() << std::endl;
-        if (!packed_path.empty()) {
+        if (!packed_path.empty())
+        {
             engine_working_data.InitializeOrClearFirstThreadLocalStorage(
-            facade.GetNumberOfNodes(), facade.GetMaxBorderNodeID() + 1);
+                facade.GetNumberOfNodes(), facade.GetMaxBorderNodeID() + 1);
 
             NodeID source = std::get<0>(packed_path.at(0));
-            NodeID target = std::get<0>(packed_path.at(packed_path.size()-1));
+            NodeID target = std::get<0>(packed_path.at(packed_path.size() - 1));
             auto &forward_heap = *engine_working_data.forward_heap_1;
             auto &reverse_heap = *engine_working_data.reverse_heap_1;
             forward_heap.Insert(source, 0, {source});
@@ -576,29 +577,25 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
             EdgeWeight weight;
             std::vector<NodeID> nodes;
             std::vector<EdgeID> edges;
-            std::tie(weight, nodes, edges) = unpackPathAndCalculateDistance(engine_working_data,
-                        facade,
-                        forward_heap,
-                        reverse_heap,
-                        force_loop_forward,
-                        force_loop_reverse,
-                        INVALID_EDGE_WEIGHT,
-                        packed_path,
-                        middle_node_id,
-                        PhantomNodes{source_phantom, target_phantom});
+            std::tie(weight, nodes, edges) =
+                unpackPathAndCalculateDistance(engine_working_data,
+                                               facade,
+                                               forward_heap,
+                                               reverse_heap,
+                                               force_loop_forward,
+                                               force_loop_reverse,
+                                               INVALID_EDGE_WEIGHT,
+                                               packed_path,
+                                               middle_node_id,
+                                               PhantomNodes{source_phantom, target_phantom});
 
-            std::cout << "unpacked_nodes: ";
-            for (auto node : nodes) {
-                std::cout << node << ", ";
-            }
             std::cout << std::endl;
             auto annotation = 0.0;
-            for (auto node : nodes) {
-                std::cout << "computeEdgeDistance(facade, node) node " << node << std::endl;
-                annotation+= computeEdgeDistance(facade, node);
+            for (auto node : nodes)
+            {
+                annotation += computeEdgeDistance(facade, node);
             }
             distances_table[location] = annotation;
-
 
             // check the direction of travel to figure out how to calculate the offset to/from
             // the source/target
