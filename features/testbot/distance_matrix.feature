@@ -6,6 +6,7 @@ Feature: Basic Distance Matrix
         Given the profile "testbot"
         And the partition extra arguments "--small-component-size 1 --max-cell-sizes 2,4,8,16"
 
+    @ch
     Scenario: Testbot - Travel distance matrix of minimal network only
         Given the node map
             """
@@ -152,7 +153,7 @@ Feature: Basic Distance Matrix
     Scenario: Testbot - Travel distance matrix of small grid
         Given the node map
             """
-            a b c
+            a b    c
             d e f
             """
 
@@ -166,16 +167,13 @@ Feature: Basic Distance Matrix
 
         When I route I should get
             | from | to | distance |
-            | a    | b  | 100m     |
-            | a    | e  | 200m     |
             | a    | f  | 299.9m   |
+            | f    | a  | 299.9m   |
 
         When I request a travel distance matrix I should get
-            |   | a     | b   | e   | f     |
-            | a | 0     | 100 | 200 | 299.9 |
-            | b | 100   | 0   | 100 | 200   |
-            | e | 200   | 100 | 0   | 100   |
-            | f | 299.9 | 200 | 100 | 0     |
+            |   | a     | f     |
+            | a | 0     | 299.9 |
+            | f | 299.9 | 0     |
 
     @ch
     Scenario: Testbot - Travel distance matrix of network with unroutable parts

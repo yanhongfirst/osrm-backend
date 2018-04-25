@@ -415,7 +415,6 @@ void forwardRoutingStep(const DataFacade<Algorithm> &facade,
                                   : row_idx + column_idx * number_of_sources;
         auto &current_weight = weights_table[location];
         auto &current_duration = durations_table[location];
-        middle_nodes_table[location] = node;
 
         // Check if new weight is better
         auto new_weight = source_weight + target_weight;
@@ -426,6 +425,7 @@ void forwardRoutingStep(const DataFacade<Algorithm> &facade,
         {
             current_weight = new_weight;
             current_duration = new_duration;
+            middle_nodes_table[location] = node;
         }
     }
 
@@ -489,9 +489,9 @@ void retrievePackedPathFromSearchSpace(NodeID middle_node_id,
     if (packed_leg.size() > 0)
     {
         path.emplace_back(
-            std::make_tuple(middle_node_id, packed_leg.at(0).first, packed_leg.at(0).second));
+            std::make_tuple(middle_node_id, packed_leg.front().first, packed_leg.front().second));
 
-        for (auto pair = packed_leg.begin(); pair < packed_leg.end(); ++pair)
+        for (auto pair = packed_leg.begin(); pair != std::prev(packed_leg.end()); ++pair)
         {
             path.emplace_back(
                 std::make_tuple(pair->first, std::next(pair)->first, std::next(pair)->second));
@@ -514,6 +514,7 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
                         const std::vector<NodeID> &middle_nodes_table,
                         SearchEngineData<mld::Algorithm> &engine_working_data)
 {
+    (void)search_space_with_buckets;
     for (unsigned column_idx = 0; column_idx < number_of_targets; ++column_idx)
     {
         const auto location = DIRECTION == FORWARD_DIRECTION
@@ -521,7 +522,6 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
                                   : row_idx + column_idx * number_of_sources;
         const auto force_loop_forward = DIRECTION == FORWARD_DIRECTION;
         const auto force_loop_reverse = DIRECTION == REVERSE_DIRECTION;
-
         auto target_index = target_indices[column_idx];
 
         if (source_index == target_index)
@@ -538,6 +538,15 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
             continue;
         }
 
+        std::cout << "source_phantom.forward_segment_id.id: "
+                  << source_phantom.forward_segment_id.id
+                  << " source_phantom.reverse_segment_id.id: "
+                  << source_phantom.reverse_segment_id.id << std::endl;
+        std::cout << "target_phantom.forward_segment_id.id: "
+                  << target_phantom.forward_segment_id.id
+                  << " target_phantom.reverse_segment_id.id: "
+                  << target_phantom.reverse_segment_id.id << std::endl;
+
         // Step 1: Find path from source to middle node
         PackedPath packed_path = mld::retrievePackedPathFromSingleManyToManyHeap<DIRECTION>(
             query_heap,
@@ -545,7 +554,15 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
 
         std::reverse(packed_path.begin(), packed_path.end());
 
-        // Step 2: Find path from middle to target node
+        // std::cout << "packed_path_from_source_to_middle: ";
+        // for (auto edge : packed_path)
+        // {
+        //     std::cout << "from: " << std::get<0>(edge) << " to: " << std::get<1>(edge)
+        //               << " from_clique_arc: " << std::get<2>(edge) << std::endl;
+        // }
+        std::cout << std::endl << std::endl;
+
+        // // Step 2: Find path from middle to target node
         retrievePackedPathFromSearchSpace(middle_node_id,
                                           column_idx,
                                           search_space_with_buckets,
@@ -560,20 +577,21 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
         //         packed_path.push_back(packed_path.front());
         // }
 
+        std::cout << "packed_path: ";
+        for (auto edge : packed_path)
+        {
+            std::cout << std::get<0>(edge) << ",";
+        }
+        std::cout << std::get<1>(packed_path.back());
+        std::cout << std::endl;
         // Step 3: Unpack the packed path
-        std::cout << "packed_path.size() " << packed_path.size() << std::endl;
         if (!packed_path.empty())
         {
             engine_working_data.InitializeOrClearFirstThreadLocalStorage(
                 facade.GetNumberOfNodes(), facade.GetMaxBorderNodeID() + 1);
 
-            NodeID source = std::get<0>(packed_path.at(0));
-            NodeID target = std::get<0>(packed_path.at(packed_path.size() - 1));
             auto &forward_heap = *engine_working_data.forward_heap_1;
             auto &reverse_heap = *engine_working_data.reverse_heap_1;
-            forward_heap.Insert(source, 0, {source});
-            reverse_heap.Insert(target, 0, {target});
-
             EdgeWeight weight;
             std::vector<NodeID> nodes;
             std::vector<EdgeID> edges;
@@ -589,6 +607,11 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
                                                middle_node_id,
                                                PhantomNodes{source_phantom, target_phantom});
 
+            std::cout << "unpacked_path: ";
+            for (auto node : nodes)
+            {
+                std::cout << node << ",";
+            }
             std::cout << std::endl;
             auto annotation = 0.0;
             for (auto node : nodes)
@@ -596,6 +619,9 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
                 annotation += computeEdgeDistance(facade, node);
             }
             distances_table[location] = annotation;
+
+            NodeID source = nodes.front();
+            NodeID target = nodes.back();
 
             // check the direction of travel to figure out how to calculate the offset to/from
             // the source/target
@@ -684,7 +710,6 @@ manyToManySearch(SearchEngineData<Algorithm> &engine_working_data,
     std::vector<NodeID> middle_nodes_table(number_of_entries, SPECIAL_NODEID);
 
     std::vector<NodeBucket> search_space_with_buckets;
-    std::vector<NodeID> packed_leg;
 
     // Populate buckets with paths from all accessible nodes to destinations via backward searches
     for (std::uint32_t column_idx = 0; column_idx < target_indices.size(); ++column_idx)
@@ -743,6 +768,12 @@ manyToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                                           middle_nodes_table,
                                           source_phantom);
         }
+
+        // std::cout << "middle_nodes_table: " << std::endl;
+        // for (auto node : middle_nodes_table)
+        // {
+        //     std::cout << "middle_node: " << node << std::endl;
+        // }
 
         if (calculate_distance)
         {
