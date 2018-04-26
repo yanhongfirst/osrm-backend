@@ -518,10 +518,6 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
     engine_working_data.InitializeOrClearFirstThreadLocalStorage(
                 facade.GetNumberOfNodes(), facade.GetMaxBorderNodeID() + 1);
 
-    const auto location = DIRECTION == FORWARD_DIRECTION
-                                  ? row_idx * number_of_targets + column_idx
-                                  : row_idx + column_idx * number_of_sources;
-
     for (unsigned column_idx = 0; column_idx < number_of_targets; ++column_idx)
     {
         const auto location = DIRECTION == FORWARD_DIRECTION
@@ -688,7 +684,7 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
                     //       -->s               <-- subtract offset to start at source
                     //          .........       <-- want this distance as result
                     // entry 0---1---2---3---   <-- 3 is exit node
-                    EdgeDistance offset = source_phantom.GetReverseDistance();
+                    EdgeDistance offset = source_phantom.GetForwardDistance();
                     distances_table[location] -= offset;
                 }
                 else if (source_phantom.reverse_segment_id.id == source)
@@ -697,7 +693,7 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
                     //          s<-------    <-- subtract offset to start at source
                     //       ...             <-- want this distance
                     // entry 0---1---2---3   <-- 3 is exit node
-                    EdgeDistance offset = source_phantom.GetForwardDistance();
+                    EdgeDistance offset = source_phantom.GetReverseDistance();
                     distances_table[location] -= offset;
                 }
                 if (target_phantom.forward_segment_id.id == target)
@@ -706,7 +702,7 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
                     //                   ++>t   <-- add offset to get to target
                     //       ................   <-- want this distance as result
                     // entry 0---1---2---3---   <-- 3 is exit node
-                    EdgeDistance offset = target_phantom.GetReverseDistance();
+                    EdgeDistance offset = target_phantom.GetForwardDistance();
                     distances_table[location] += offset;
                 }
                 else if (target_phantom.reverse_segment_id.id == target)
@@ -715,7 +711,7 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
                     //                   <++t   <-- add offset to get from target
                     //       ................   <-- want this distance as result
                     // entry 0---1---2---3---   <-- 3 is exit node
-                    EdgeDistance offset = target_phantom.GetForwardDistance();
+                    EdgeDistance offset = target_phantom.GetReverseDistance();
                     distances_table[location] += offset;
                 }
             }
