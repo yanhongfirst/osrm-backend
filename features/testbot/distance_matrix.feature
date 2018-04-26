@@ -5,8 +5,7 @@ Feature: Basic Distance Matrix
     Background:
         Given the profile "testbot"
         And the partition extra arguments "--small-component-size 1 --max-cell-sizes 2,4,8,16"
-
-    @ch
+    @ch 
     Scenario: Testbot - Travel distance matrix of minimal network only
         Given the node map
             """
@@ -20,6 +19,7 @@ Feature: Basic Distance Matrix
         When I route I should get
             | from | to | distance |
             | a    | b  | 100m     |
+            | b    | a  | 100m     |
 
         When I request a travel distance matrix I should get
             |   | a   | b   |
@@ -36,6 +36,14 @@ Feature: Basic Distance Matrix
             a b
             c d
             """
+
+        When I route I should get
+            | from | to | distance |
+            | a    | b  | 100m     |
+            | b    | a  | 100m     |
+            | c    | d  | 100m     |
+            | d    | c  | 100m     |
+            | a    | c  |          |
 
         And the ways
             | nodes | highway  | toll | #                                                       |
@@ -73,8 +81,9 @@ Feature: Basic Distance Matrix
             |   | a | b   | c   | d   |
             | a | 0 | 300 | 100 | 200 |
 
-       @ch
-       Scenario: Testbot - Travel distance matrix of minimal network disconnected motorway exclude
+
+    @ch
+    Scenario: Testbot - Travel distance matrix of minimal network disconnected motorway exclude
         Given the query options
             | exclude  | motorway  |
         And the extract extra arguments "--small-component-size 4"
@@ -118,7 +127,7 @@ Feature: Basic Distance Matrix
             |   | a | b   | e | g |
             | a | 0 | 100 |   |   |
 
-    @ch
+    @ch 
     Scenario: Testbot - Travel distance matrix with different way speeds
         Given the node map
             """
@@ -131,38 +140,33 @@ Feature: Basic Distance Matrix
             | bc    | secondary |
             | cd    | tertiary  |
 
+        When I route I should get
+            | from | to | distance |
+            | a    | b  | 100m     |
+            | a    | c  | 200m     |
+            | a    | d  | 299.9m   |
+            | b    | a  | 100m     |
+            | b    | c  | 100m     |
+            | b    | d  | 200m     |
+
         When I request a travel distance matrix I should get
             |   | a     | b   | c   | d     |
             | a | 0     | 100 | 200 | 299.9 |
             | b | 100   | 0   | 100 | 200   |
-            | c | 200   | 100 | 0   | 100   |
-            | d | 299.9 | 200 | 100 | 0     |
 
-        When I request a travel distance matrix I should get
-            |   | a | b   | c   | d   |
-            | a | 0 | 100 | 200 | 299.9 |
-
-        When I request a travel distance matrix I should get
-            |   | a     |
-            | a | 0     |
-            | b | 100   |
-            | c | 200   |
-            | d | 299.9 |
-
-
+    @ch 
     Scenario: Testbot - Travel distance matrix of small grid
         Given the node map
             """
-            a b    c
+            a     c
             d e f
             """
 
         And the ways
             | nodes |
-            | abc   |
+            | ac    |
             | def   |
             | ad    |
-            | be    |
             | cf    |
 
         When I route I should get
@@ -175,7 +179,7 @@ Feature: Basic Distance Matrix
             | a | 0     | 299.9 |
             | f | 299.9 | 0     |
 
-    @ch
+    @ch 
     Scenario: Testbot - Travel distance matrix of network with unroutable parts
         Given the node map
             """
@@ -191,7 +195,7 @@ Feature: Basic Distance Matrix
             | a | 0 | 100 |
             | b |   | 0   |
 
-    @ch
+    @ch 
     Scenario: Testbot - Travel distance matrix of network with oneways
         Given the node map
             """
@@ -212,7 +216,7 @@ Feature: Basic Distance Matrix
             | d | 200   | 299.9 | 0     | 300   |
             | e | 299.9 | 399.9 | 100   | 0     |
 
-    @ch
+
     Scenario: Testbot - Rectangular travel distance matrix
         Given the node map
             """
@@ -228,21 +232,12 @@ Feature: Basic Distance Matrix
             | be    |
             | cf    |
 
-        When I request a travel distance matrix I should get
-            |   | a | b   | e   | f     |
-            | a | 0 | 100 | 200 | 299.9 |
-
-        When I request a travel distance matrix I should get
-            |   | a     |
-            | a | 0     |
-            | b | 100   |
-            | e | 200   |
-            | f | 299.9 |
-
-        When I request a travel distance matrix I should get
-            |   | a   | b   | e   | f     |
-            | a | 0   | 100 | 200 | 299.9 |
-            | b | 100 | 0   | 100 | 200   |
+        When I route I should get
+            | from | to | distance |
+            | e    | a  | 200m     |
+            | e    | b  | 100m     |
+            | f    | a  | 299.9m   |
+            | f    | b  | 200m     |
 
         When I request a travel distance matrix I should get
             |   | a     | b   |
@@ -251,29 +246,8 @@ Feature: Basic Distance Matrix
             | e | 200   | 100 |
             | f | 299.9 | 200 |
 
-        When I request a travel distance matrix I should get
-            |   | a   | b   | e   | f     |
-            | a | 0   | 100 | 200 | 299.9 |
-            | b | 100 | 0   | 100 | 200   |
-            | e | 200 | 100 | 0   | 100   |
-
-        When I request a travel distance matrix I should get
-            |   | a     | b   | e   |
-            | a | 0     | 100 | 200 |
-            | b | 100   | 0   | 100 |
-            | e | 200   | 100 | 0   |
-            | f | 299.9 | 200 | 100 |
-
-        When I request a travel distance matrix I should get
-            |   | a     | b   | e   | f     |
-            | a | 0     | 100 | 200 | 299.9 |
-            | b | 100   | 0   | 100 | 200   |
-            | e | 200   | 100 | 0   | 100   |
-            | f | 299.9 | 200 | 100 | 0     |
-
-
-     @ch
-     Scenario: Testbot - Travel distance 3x2 matrix
+    @ch 
+    Scenario: Testbot - Travel distance 3x2 matrix
         Given the node map
             """
             a b c
@@ -491,14 +465,3 @@ Feature: Basic Distance Matrix
             | a    | b  | ab,ab    | 299.9m   |
             | a    | c  | ac,ac    | 200m     |
             | a    | d  | ab,bd,bd | 499.9m   |
-
-        When I request a travel distance matrix I should get
-            |   | a | b   | c   | d   |
-            | a | 0 | 299.9 | 200 | 499.9 |
-
-        When I request a travel distance matrix I should get
-            |   | a     |
-            | a | 0     |
-            | b | 299.9 |
-            | c | 200   |
-            | d | 499.9 |
