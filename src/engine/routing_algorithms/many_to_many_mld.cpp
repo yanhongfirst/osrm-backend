@@ -218,12 +218,10 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                 const std::vector<std::size_t> &phantom_indices,
                 const bool calculate_distance)
 {
-    (void)calculate_distance; // flag stub to use for calculating distances in matrix in mld in the
-                              // future
-
     std::vector<EdgeWeight> weights(phantom_indices.size(), INVALID_EDGE_WEIGHT);
     std::vector<EdgeDuration> durations(phantom_indices.size(), MAXIMAL_EDGE_DURATION);
-    std::vector<EdgeDistance> distances(phantom_indices.size(), INVALID_EDGE_DISTANCE);
+    std::vector<EdgeDistance> distances;
+    std::vector<NodeID> middle_nodes_table(phantom_indices.size(), SPECIAL_NODEID);
 
     // Collect destination (source) nodes into a map
     std::unordered_multimap<NodeID, std::tuple<std::size_t, EdgeWeight, EdgeDuration>>
@@ -291,6 +289,7 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                 {
                     weights[index] = path_weight;
                     durations[index] = path_duration;
+                    middle_nodes_table[index] = node;
                 }
 
                 // Remove node from destinations list
@@ -322,33 +321,54 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
         }
     };
 
+    NodeID SourceOrDestination = 0;
+
     { // Place source (destination) adjacent nodes into the heap
         const auto &phantom_node = phantom_nodes[phantom_index];
 
         if (DIRECTION == FORWARD_DIRECTION)
         {
-
             if (phantom_node.IsValidForwardSource())
+            {
+                std::cout << " phantom_node.forward_segment_id.id: "
+                          << phantom_node.forward_segment_id.id << std::endl;
+                SourceOrDestination = phantom_node.forward_segment_id.id;
                 insert_node(phantom_node.forward_segment_id.id,
                             -phantom_node.GetForwardWeightPlusOffset(),
                             -phantom_node.GetForwardDuration());
+            }
 
             if (phantom_node.IsValidReverseSource())
+            {
+                std::cout << " phantom_node.reverse_segment_id.id: "
+                          << phantom_node.reverse_segment_id.id << std::endl;
+                SourceOrDestination = phantom_node.reverse_segment_id.id;
                 insert_node(phantom_node.reverse_segment_id.id,
                             -phantom_node.GetReverseWeightPlusOffset(),
                             -phantom_node.GetReverseDuration());
+            }
         }
         else if (DIRECTION == REVERSE_DIRECTION)
         {
             if (phantom_node.IsValidForwardTarget())
+            {
+                std::cout << " phantom_node.forward_segment_id.id: "
+                          << phantom_node.forward_segment_id.id << std::endl;
+                SourceOrDestination = phantom_node.forward_segment_id.id;
                 insert_node(phantom_node.forward_segment_id.id,
                             phantom_node.GetForwardWeightPlusOffset(),
                             phantom_node.GetForwardDuration());
+            }
 
             if (phantom_node.IsValidReverseTarget())
+            {
+                std::cout << " phantom_node.reverse_segment_id.id: "
+                          << phantom_node.reverse_segment_id.id << std::endl;
+                SourceOrDestination = phantom_node.reverse_segment_id.id;
                 insert_node(phantom_node.reverse_segment_id.id,
                             phantom_node.GetReverseWeightPlusOffset(),
                             phantom_node.GetReverseDuration());
+            }
         }
     }
 
@@ -371,6 +391,59 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                                       phantom_nodes,
                                       phantom_index,
                                       phantom_indices);
+    }
+
+    if (calculate_distance)
+    {
+
+        distances.resize(phantom_indices.size(), INVALID_EDGE_DISTANCE);
+
+        // std::cout << "query_heap.Size()" << query_heap.Size() << std::endl;
+        // std::cout << "query_heap.Min()" << query_heap.Min() << std::endl;
+
+        std::cout << "Source or Destination Node: " << SourceOrDestination << std::endl;
+        // PackedPath packed_path = mld::retrievePackedPathFromSingleManyToManyHeap<DIRECTION>(
+        //                 query_heap,
+        //                 SourceOrDestination); // packed_path_from_source_to_middle
+
+        std::cout << "Target Nodes: ";
+        auto index = 0;
+        for (auto middle_node_id : middle_nodes_table)
+        {
+            std::cout << middle_node_id << ", ";
+        }
+
+        for (auto middle_node_id : middle_nodes_table)
+        {
+
+            std::cout << "middle_node_id: " << middle_node_id << std::endl;
+
+            if (SourceOrDestination == middle_node_id)
+            {
+                distances[index] = 0.0;
+                index++;
+                continue;
+            }
+
+            // BOOST_ASSERT_MSG(!query_heap.Empty(), "Query Heap is Empty");
+            // if (!query_heap.Empty()){
+            PackedPath packed_path = mld::retrievePackedPathFromSingleManyToManyHeap<DIRECTION>(
+                query_heap,
+                middle_node_id); // packed_path_from_source_to_middle
+            // std::cout << "Fine then do I get here?" << std::endl;
+            // std::reverse(packed_path.begin(), packed_path.end());
+            // if (!packed_path.empty()) {
+            //     std::cout << "packed_path: ";
+            //     for (auto edge : packed_path)
+            //     {
+            //         std::cout << std::get<0>(edge) << ",";
+            //     }
+            //     std::cout << std::get<1>(packed_path.back());
+            //     std::cout << std::endl;
+            // }
+            // }
+            index++;
+        }
     }
 
     return std::make_pair(durations, distances);
@@ -539,7 +612,6 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
             continue;
         }
 
-        std::cout << "middle_node_id: " << middle_node_id << std::endl;
         std::cout << "source_phantom.forward_segment_id.id: "
                   << source_phantom.forward_segment_id.id
                   << " source_phantom.reverse_segment_id.id: "
@@ -865,8 +937,6 @@ manyToManySearch(SearchEngineData<mld::Algorithm> &engine_working_data,
                  const bool calculate_distance,
                  const bool calculate_duration)
 {
-    (void)calculate_distance; // flag stub to use for calculating distances in matrix in mld in the
-                              // future
     (void)calculate_duration; // flag stub to use for calculating distances in matrix in mld in the
                               // future
 

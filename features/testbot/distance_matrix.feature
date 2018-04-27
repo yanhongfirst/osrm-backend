@@ -128,12 +128,12 @@ Feature: Basic Distance Matrix
             |   | a     | b   | c   | d     |
             | a | 0     | 100 | 200 | 299.9 |
             | b | 100   | 0   | 100 | 200   |
-            | c | 200   | 100 | 0   | 100   |
-            | d | 299.9 | 200 | 100 | 0     |
+            # | c | 200   | 100 | 0   | 100   |
+            # | d | 299.9 | 200 | 100 | 0     |
 
-        # When I request a travel distance matrix I should get
-        #     |   | a | b   | c   | d   |
-        #     | a | 0 | 100 | 200 | 299.9 |
+        When I request a travel distance matrix I should get
+            |   | a | b   | c   | d     |
+            | a | 0 | 100 | 200 | 299.9 |
 
         # When I request a travel distance matrix I should get
         #     |   | a     |
