@@ -388,18 +388,21 @@ UnpackedPath search(SearchEngineData<Algorithm> &engine_working_data,
     // Get packed path as edges {from node ID, to node ID, from_clique_arc}
     auto packed_path = retrievePackedPathFromHeap(forward_heap, reverse_heap, middle);
 
-    if (!packed_path.empty() ) {
+    if (!packed_path.empty())
+    {
         std::cout << "packed_path: ";
         for (auto edge : packed_path)
         {
             std::cout << std::get<0>(edge) << ",";
         }
         std::cout << std::get<1>(packed_path.back());
-        std::cout << std::endl;    
-    } else {
+        std::cout << std::endl;
+    }
+    else
+    {
         std::cout << "no packed_path!" << std::endl;
     }
-    
+
     // Beware the edge case when start, middle, end are all the same.
     // In this case we return a single node, no edges. We also don't unpack.
     const NodeID source_node = !packed_path.empty() ? std::get<0>(packed_path.front()) : middle;
