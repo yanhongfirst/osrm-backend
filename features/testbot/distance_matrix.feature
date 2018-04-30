@@ -513,7 +513,6 @@ Feature: Basic Distance Matrix
             | a    | c  | ac,ac    | 200m      |
             | a    | d  | ab,bd,bd | 500m +- 1 |
 
-
         When I request a travel distance matrix I should get
             |   | a | b      | c      | d      |
             | a | 0 | 300+-2 | 200+-2 | 500+-2 |
