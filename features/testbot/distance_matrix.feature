@@ -477,6 +477,17 @@ Feature: Basic Distance Matrix
             | 7 | 300+-5  | 200+-5  | 600+-5  | 500+-5  | 900+-5  | 800+-5  | 0       | 1100+-5 |
             | 8 | 400+-5  | 300+-5  | 700+-5  | 600+-5  | 1000+-5 | 900+-5  | 100+-5  | 0       |
 
+        When I request a travel distance matrix I should get
+            |   | 1     |
+            | 1 | 0     |
+            | 2 | 100   |
+            | 3 | 899.9 |
+            | 4 | 999.8 |
+            | 5 | 599.9 |
+            | 6 | 699.9 |
+            | 7 | 299.9 |
+            | 8 | 399.9 |
+
     Scenario: Testbot - Travel distance matrix with ties
         Given the node map
             """
