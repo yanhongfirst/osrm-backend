@@ -146,12 +146,12 @@ Feature: Basic Distance Matrix
             |   | a | b   | c   | d     |
             | a | 0 | 100 | 200 | 299.9 |
 
-        # When I request a travel distance matrix I should get
-        #     |   | a     |
-        #     | a | 0     |
-        #     | b | 100   |
-        #     | c | 200   |
-        #     | d | 299.9 |
+        When I request a travel distance matrix I should get
+            |   | a     |
+            | a | 0     |
+            | b | 100   |
+            | c | 200   |
+            | d | 299.9 |
 
     Scenario: Testbot - Travel distance matrix of small grid
         Given the node map

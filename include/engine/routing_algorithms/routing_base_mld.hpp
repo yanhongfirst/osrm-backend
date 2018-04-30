@@ -78,15 +78,12 @@ template <bool DIRECTION, typename OutIter>
 inline void retrievePackedPathFromSingleManyToManyHeap(
     const SearchEngineData<Algorithm>::ManyToManyQueryHeap &heap, const NodeID middle, OutIter out)
 {
-    std::cout << "and do I ever get here? middle: " << middle << std::endl;
 
     NodeID current = middle;
     NodeID parent = heap.GetData(current).parent;
 
     while (current != parent)
     {
-        std::cout << "inside while loop: current: " << current << " parent: " << parent
-                  << std::endl;
         const auto &data = heap.GetData(current);
 
         if (DIRECTION == FORWARD_DIRECTION)
@@ -109,11 +106,11 @@ template <bool DIRECTION>
 inline PackedPath retrievePackedPathFromSingleManyToManyHeap(
     const SearchEngineData<Algorithm>::ManyToManyQueryHeap &heap, const NodeID middle)
 {
-    std::cout << "do I ever get here?" << std::endl;
+
     PackedPath packed_path;
     retrievePackedPathFromSingleManyToManyHeap<DIRECTION>(
         heap, middle, std::back_inserter(packed_path));
-    std::cout << "do I reach the bottom of the non-recursive heap search?" << std::endl;
+
     return packed_path;
 }
 
