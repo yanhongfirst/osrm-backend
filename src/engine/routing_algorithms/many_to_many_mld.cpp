@@ -471,65 +471,103 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                                                    middle_node_id,
                                                    PhantomNodes{source_phantom, target_phantom});
 
-                auto annotation = 0.0;
-                if (DIRECTION == REVERSE_DIRECTION)
+                if (DIRECTION == FORWARD_DIRECTION)
+                {
+                    auto annotation = 0.0;
+                    for (auto node = unpacked_nodes.begin();
+                         node != std::prev(unpacked_nodes.end());
+                         ++node)
+                        annotation += computeEdgeDistance(facade, *node);
+
+                    std::cout << "unpacked_path: ";
+                    for (auto node : unpacked_nodes)
+                    {
+                        std::cout << node << ",";
+                    }
+                    std::cout << std::endl;
+
+                    std::cout << "annotation: " << annotation << std::endl;
+                    distances_table[location] = annotation;
+
+                    NodeID source = unpacked_nodes.front();
+                    NodeID target = unpacked_nodes.back();
+                    std::cout << "source: " << source << std::endl;
+                    std::cout << "target: " << target << std::endl;
+
+                    // check the direction of travel to figure out how to calculate the offset
+                    // to/from
+                    // the source/target
+                    if (source_phantom.forward_segment_id.id == source)
+                    {
+                        EdgeDistance offset = source_phantom.GetForwardDistance();
+                        distances_table[location] -= offset;
+                    }
+                    else if (source_phantom.reverse_segment_id.id == source)
+                    {
+                        EdgeDistance offset = source_phantom.GetReverseDistance();
+                        distances_table[location] -= offset;
+                    }
+                    if (target_phantom.forward_segment_id.id == target)
+                    {
+                        EdgeDistance offset = target_phantom.GetForwardDistance();
+                        distances_table[location] += offset;
+                    }
+                    else if (target_phantom.reverse_segment_id.id == target)
+                    {
+                        EdgeDistance offset = target_phantom.GetReverseDistance();
+                        distances_table[location] += offset;
+                    }
+                }
+                else
+                {
                     std::reverse(unpacked_nodes.begin(), unpacked_nodes.end());
-                NodeID source = unpacked_nodes.front(); NodeID target = unpacked_nodes.back();
 
-                for (auto node = unpacked_nodes.begin(); node != std::prev(unpacked_nodes.end());
-                     ++node)
-                    annotation += computeEdgeDistance(facade, *node);
+                    auto annotation = 0.0;
+                    for (auto node = unpacked_nodes.begin();
+                         node != std::prev(unpacked_nodes.end());
+                         ++node)
+                        annotation += computeEdgeDistance(facade, *node);
+                    std::reverse(unpacked_nodes.begin(), unpacked_nodes.end());
 
-                std::cout << "unpacked_path: ";
-                for (auto node : unpacked_nodes)
-                {
-                    std::cout << node << ",";
+                    std::cout << "unpacked_path: ";
+                    for (auto node : unpacked_nodes)
+                    {
+                        std::cout << node << ",";
+                    }
+                    std::cout << std::endl;
+
+                    std::cout << "annotation: " << annotation << std::endl;
+                    distances_table[location] = annotation;
+
+                    NodeID source = unpacked_nodes.front();
+                    NodeID target = unpacked_nodes.back();
+                    std::cout << "source: " << source << std::endl;
+                    std::cout << "target: " << target << std::endl;
+
+                    // check the direction of travel to figure out how to calculate the offset
+                    // to/from
+                    // the source/target
+                    if (source_phantom.forward_segment_id.id == target)
+                    {
+                        EdgeDistance offset = source_phantom.GetForwardDistance();
+                        distances_table[location] += offset;
+                    }
+                    else if (source_phantom.reverse_segment_id.id == target)
+                    {
+                        EdgeDistance offset = source_phantom.GetReverseDistance();
+                        distances_table[location] += offset;
+                    }
+                    if (target_phantom.forward_segment_id.id == source)
+                    {
+                        EdgeDistance offset = target_phantom.GetForwardDistance();
+                        distances_table[location] -= offset;
+                    }
+                    else if (target_phantom.reverse_segment_id.id == source)
+                    {
+                        EdgeDistance offset = target_phantom.GetReverseDistance();
+                        distances_table[location] -= offset;
+                    }
                 }
-                std::cout << std::endl;
-
-                std::cout << "annotation: " << annotation << std::endl;
-                distances_table[location] = annotation;
-
-                std::cout << "source: " << source << std::endl;
-                std::cout << "target: " << target << std::endl;
-
-                if (source_phantom.forward_segment_id.id == source)
-                {
-                    std::cout << "(source_phantom.forward_segment_id.id == source) 1" << std::endl;
-                    EdgeDistance offset = source_phantom.GetForwardDistance();
-                    std::cout << "offset: " << offset << std::endl;
-                    DIRECTION == FORWARD_DIRECTION ? distances_table[location] -= offset
-                                                   : distances_table[location] += offset;
-                }
-                else if (source_phantom.reverse_segment_id.id == source)
-                {
-                    std::cout << "(source_phantom.reverse_segment_id.id == source) 2" << std::endl;
-                    EdgeDistance offset = source_phantom.GetReverseDistance();
-                    std::cout << "offset: " << offset << std::endl;
-                    DIRECTION == FORWARD_DIRECTION ? distances_table[location] -= offset
-                                                   : distances_table[location] += offset;
-                }
-                if (target_phantom.forward_segment_id.id == target)
-                {
-                    std::cout << "(target_phantom.forward_segment_id.id == target) 3" << std::endl;
-                    EdgeDistance offset = target_phantom.GetForwardDistance();
-                    std::cout << "offset: " << offset << std::endl;
-                    DIRECTION == FORWARD_DIRECTION ? distances_table[location] += offset
-                                                   : distances_table[location] -= offset;
-                }
-                else if (target_phantom.reverse_segment_id.id == target)
-                {
-                    std::cout << "(target_phantom.reverse_segment_id.id == target) 4" << std::endl;
-                    EdgeDistance offset = target_phantom.GetReverseDistance();
-                    std::cout << "offset: " << offset << std::endl;
-                    DIRECTION == FORWARD_DIRECTION ? distances_table[location] += offset
-                                                   : distances_table[location] -= offset;
-                }
-
-                std::cout << "distances_table: ";
-                for (auto distance : distances_table)
-                    std::cout << distance << ", ";
-                std::cout << std::endl << std::endl;
             }
 
             if (packed_path.empty())
