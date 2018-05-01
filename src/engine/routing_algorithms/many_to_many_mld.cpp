@@ -499,21 +499,25 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                     // the source/target
                     if (source_phantom.forward_segment_id.id == source)
                     {
+                        std::cout << "DIRECTION == FORWARD_DIRECTION source_phantom.forward_segment_id.id == source" << std::endl;
                         EdgeDistance offset = source_phantom.GetForwardDistance();
                         distances_table[location] -= offset;
                     }
                     else if (source_phantom.reverse_segment_id.id == source)
                     {
+                        std::cout << "DIRECTION == FORWARD_DIRECTION source_phantom.reverse_segment_id.id == source" << std::endl;
                         EdgeDistance offset = source_phantom.GetReverseDistance();
                         distances_table[location] -= offset;
                     }
                     if (target_phantom.forward_segment_id.id == target)
                     {
+                        std::cout << "DIRECTION == FORWARD_DIRECTION target_phantom.forward_segment_id.id == target" << std::endl;
                         EdgeDistance offset = target_phantom.GetForwardDistance();
                         distances_table[location] += offset;
                     }
                     else if (target_phantom.reverse_segment_id.id == target)
                     {
+                        std::cout << "DIRECTION == FORWARD_DIRECTION target_phantom.reverse_segment_id.id == target" << std::endl;
                         EdgeDistance offset = target_phantom.GetReverseDistance();
                         distances_table[location] += offset;
                     }
@@ -549,25 +553,30 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                     // the source/target
                     if (source_phantom.forward_segment_id.id == target)
                     {
+                        std::cout << "DIRECTION == REVERSE_DIRECTION source_phantom.forward_segment_id.id == source" << std::endl;
                         EdgeDistance offset = source_phantom.GetForwardDistance();
                         distances_table[location] += offset;
                     }
                     else if (source_phantom.reverse_segment_id.id == target)
                     {
+                        std::cout << "DIRECTION == REVERSE_DIRECTION source_phantom.reverse_segment_id.id == source" << std::endl;
                         EdgeDistance offset = source_phantom.GetReverseDistance();
                         distances_table[location] += offset;
                     }
                     if (target_phantom.forward_segment_id.id == source)
                     {
+                        std::cout << "DIRECTION == REVERSE_DIRECTION target_phantom.forward_segment_id.id == target" << std::endl;
                         EdgeDistance offset = target_phantom.GetForwardDistance();
                         distances_table[location] -= offset;
                     }
                     else if (target_phantom.reverse_segment_id.id == source)
                     {
+                        std::cout << "DIRECTION == REVERSE_DIRECTION target_phantom.reverse_segment_id.id == target" << std::endl;
                         EdgeDistance offset = target_phantom.GetReverseDistance();
                         distances_table[location] -= offset;
                     }
                 }
+                std::cout << std::endl;
             }
 
             if (packed_path.empty())
