@@ -400,14 +400,14 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
         auto number_of_targets = phantom_indices.size();
         auto number_of_sources = 1;
         auto row_idx = 0;
-        auto source_index = phantom_index;
+        // auto source_index = phantom_index;
 
         for (unsigned column_idx = 0; column_idx < number_of_targets; ++column_idx)
         {
             std::cout << "distances_table: ";
             for (auto distance : distances_table)
                 std::cout << distance << ", ";
-            std::cout << std::endl << std::endl;
+            std::cout << std::endl;
             const auto location = DIRECTION == FORWARD_DIRECTION
                                       ? row_idx * number_of_targets + column_idx
                                       : row_idx + column_idx * number_of_sources;
@@ -416,123 +416,34 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
             const auto &target_phantom = phantom_nodes[target_index];
             NodeID middle_node_id = middle_nodes_table[location];
 
-            if (source_index == target_index)
-            {
-                std::cout << "ESCAPE source_index == target_index" << std::endl;
-                // std::cout << "middle_node_id: " << middle_node_id << std::endl;
-                // std::cout << "source_phantom.forward_segment_id.id: "
-                //       << source_phantom.forward_segment_id.id
-                //       << " source_phantom.reverse_segment_id.id: "
-                //       << source_phantom.reverse_segment_id.id << std::endl;
-                // std::cout << "target_phantom.forward_segment_id.id: "
-                //       << target_phantom.forward_segment_id.id
-                //       << " target_phantom.reverse_segment_id.id: "
-                //           << target_phantom.reverse_segment_id.id << std::endl;
-                distances_table[location] = 0.0;
-                continue;
-            }
+            // if (source_index == target_index)
+            // {
 
-            if (middle_node_id == SPECIAL_NODEID) // takes care of one-ways
-            {
-                std::cout << "ESCAPE middle_node_id == SPECIAL_NODEID" << std::endl;
-                distances_table[location] = INVALID_EDGE_DISTANCE;
-                continue;
-            }
+            //     std::cout << "middle_node_id: " << middle_node_id << std::endl;
+            //     std::cout << "source_phantom.forward_segment_id.id: "
+            //               << source_phantom.forward_segment_id.id
+            //               << " source_phantom.reverse_segment_id.id: "
+            //               << source_phantom.reverse_segment_id.id << std::endl;
+            //     std::cout << "target_phantom.forward_segment_id.id: "
+            //               << target_phantom.forward_segment_id.id
+            //               << " target_phantom.reverse_segment_id.id: "
+            //               << target_phantom.reverse_segment_id.id << std::endl;
+            //     distances_table[location] = 0.0;
+            //     continue;
+            // }
+
+            // if (middle_node_id == SPECIAL_NODEID) // takes care of one-ways
+            // {
+            //     std::cout << "ESCAPE middle_node_id == SPECIAL_NODEID" << std::endl;
+            //     distances_table[location] = INVALID_EDGE_DISTANCE;
+            //     continue;
+            // }
 
             PackedPath packed_path = mld::retrievePackedPathFromSingleManyToManyHeap<DIRECTION>(
                 query_heap,
                 middle_node_id); // packed_path_from_source_to_middle
-            std::reverse(packed_path.begin(), packed_path.end());
-
-            if (packed_path.empty())
-            {
-                std::cout << "offsets when packed path is empty" << std::endl;
-                if (DIRECTION == FORWARD_DIRECTION)
-                {
-                    std::cout << "source_phantom.forward_segment_id.id: "
-                              << source_phantom.forward_segment_id.id
-                              << " source_phantom.reverse_segment_id.id: "
-                              << source_phantom.reverse_segment_id.id << std::endl;
-                    std::cout << "target_phantom.forward_segment_id.id: "
-                              << target_phantom.forward_segment_id.id
-                              << " target_phantom.reverse_segment_id.id: "
-                              << target_phantom.reverse_segment_id.id << std::endl;
-
-                    if (source_phantom.IsValidForwardSource() &&
-                        target_phantom.IsValidForwardTarget() &&
-                        target_phantom.GetForwardDistance() > source_phantom.GetForwardDistance())
-                    {
-                        //       --------->t        <-- offsets
-                        //       ->s                <-- subtract source offset from target offset
-                        //         .........        <-- want this distance as result
-                        // entry 0---1---2---3---   <-- 3 is exit node
-                        EdgeDistance offset = target_phantom.GetForwardDistance() -
-                                              source_phantom.GetForwardDistance();
-                        distances_table[location] = offset;
-
-                        std::cout << "offsets DIRECTION == FORWARD_DIRECTION 1"
-                                  << "distances_table[location]: " << distances_table[location]
-                                  << std::endl;
-                    }
-                    else if (source_phantom.IsValidReverseSource() &&
-                             target_phantom.IsValidReverseTarget())
-                    {
-
-                        //               s<---      <-- offsets
-                        //         t<---------      <-- subtract source offset from target offset
-                        //         ......           <-- want this distance as result
-                        // entry 0---1---2---3---   <-- 3 is exit node
-                        EdgeDistance offset = target_phantom.GetReverseDistance() -
-                                              source_phantom.GetReverseDistance();
-                        distances_table[location] = offset;
-                        std::cout << "offsets DIRECTION == FORWARD_DIRECTION 2"
-                                  << "distances_table[location]: " << distances_table[location]
-                                  << std::endl;
-                    }
-                }
-                else if (DIRECTION == REVERSE_DIRECTION)
-                {
-                    std::cout << "source_phantom.forward_segment_id.id: "
-                              << source_phantom.forward_segment_id.id
-                              << " source_phantom.reverse_segment_id.id: "
-                              << source_phantom.reverse_segment_id.id << std::endl;
-                    std::cout << "target_phantom.forward_segment_id.id: "
-                              << target_phantom.forward_segment_id.id
-                              << " target_phantom.reverse_segment_id.id: "
-                              << target_phantom.reverse_segment_id.id << std::endl;
-
-                    if (source_phantom.IsValidForwardTarget() &&
-                        target_phantom.IsValidForwardSource() &&
-                        source_phantom.GetForwardDistance() > target_phantom.GetForwardDistance())
-                    {
-                        //       --------->t        <-- offsets
-                        //       ->s                <-- subtract source offset from target offset
-                        //         .........        <-- want this distance as result
-                        // entry 0---1---2---3---   <-- 3 is exit node
-                        EdgeDistance offset = source_phantom.GetForwardDistance() -
-                                              target_phantom.GetForwardDistance();
-                        distances_table[location] = offset;
-                        std::cout << "offsets DIRECTION == REVERSE_DIRECTION 3"
-                                  << "distances_table[location]: " << distances_table[location]
-                                  << std::endl;
-                    }
-                    else if (source_phantom.IsValidReverseTarget() &&
-                             target_phantom.IsValidReverseSource())
-                    {
-
-                        //               s<---      <-- offsets
-                        //         t<---------      <-- subtract source offset from target offset
-                        //         ......           <-- want this distance as result
-                        // entry 0---1---2---3---   <-- 3 is exit node
-                        EdgeDistance offset = source_phantom.GetReverseDistance() -
-                                              target_phantom.GetReverseDistance();
-                        distances_table[location] = offset;
-                        std::cout << "offsets DIRECTION == REVERSE_DIRECTION 4 "
-                                  << "distances_table[location]: " << distances_table[location]
-                                  << std::endl;
-                    }
-                }
-            }
+            if (DIRECTION == FORWARD_DIRECTION)
+                std::reverse(packed_path.begin(), packed_path.end());
 
             // Step 3: Unpack the packed path
             if (!packed_path.empty())
@@ -540,9 +451,8 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                 std::cout << "packed_path: ";
                 for (auto edge : packed_path)
                 {
-                    std::cout << std::get<0>(edge) << ",";
+                    std::cout << std::get<0>(edge) << "-" << std::get<1>(edge) << ",";
                 }
-                std::cout << std::get<1>(packed_path.back());
                 std::cout << std::endl;
 
                 auto &forward_heap = *engine_working_data.forward_heap_1;
@@ -574,17 +484,13 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                                                    PhantomNodes{source_phantom, target_phantom});
 
                 auto annotation = 0.0;
+
                 if (DIRECTION == REVERSE_DIRECTION)
-                {
                     std::reverse(unpacked_nodes.begin(), unpacked_nodes.end());
-                }
-                NodeID source = unpacked_nodes.front();
-                NodeID target = unpacked_nodes.back();
+
                 for (auto node = unpacked_nodes.begin(); node != std::prev(unpacked_nodes.end());
                      ++node)
-                {
                     annotation += computeEdgeDistance(facade, *node);
-                }
 
                 std::cout << "unpacked_path: ";
                 for (auto node : unpacked_nodes)
@@ -595,19 +501,13 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
 
                 std::cout << "annotation: " << annotation << std::endl;
                 distances_table[location] = annotation;
-                // DIRECTION == FORWARD_DIRECTION
-                // if (source_phantom.IsValidForwardSource() &&
-                // target_phantom.IsValidForwardTarget()
-                // if (source_phantom.IsValidReverseSource() &&
-                // target_phantom.IsValidReverseTarget()
 
-                // DIRECTION == REVERSE_DIRECTION
-                // if (source_phantom.IsValidForwardTarget() &&
-                // target_phantom.IsValidForwardSource()
-                // if (source_phantom.IsValidReverseTarget() &&
-                // target_phantom.IsValidReverseSource()
-                if (source_phantom.IsValidForwardSource() &&
-                    source_phantom.forward_segment_id.id == source)
+                NodeID source = unpacked_nodes.front();
+                NodeID target = unpacked_nodes.back();
+                std::cout << "source: " << source << std::endl;
+                std::cout << "target: " << target << std::endl;
+
+                if (source_phantom.forward_segment_id.id == source)
                 {
                     //       ............       <-- calculateEGBAnnotation returns distance from 0
                     //       to 3
@@ -615,49 +515,20 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                     //          .........       <-- want this distance as result
                     // entry 0---1---2---3---   <-- 3 is exit node
                     EdgeDistance offset = source_phantom.GetForwardDistance();
-                    std::cout << "offset: " << offset << std::endl;
-                    distances_table[location] -= offset;
-                    std::cout << "offsets DIRECTION == REVERSE_DIRECTION 5 "
-                              << "distances_table[location]: " << distances_table[location]
-                              << std::endl;
+                    DIRECTION == FORWARD_DIRECTION ? distances_table[location] -= offset
+                                                   : distances_table[location] += offset;
                 }
-                if (source_phantom.IsValidReverseSource() &&
-                    source_phantom.reverse_segment_id.id == source)
+                else if (source_phantom.reverse_segment_id.id == source)
                 {
                     //       ............    <-- calculateEGBAnnotation returns distance from 0 to 3
                     //          s<-------    <-- subtract offset to start at source
                     //       ...             <-- want this distance
                     // entry 0---1---2---3   <-- 3 is exit node
                     EdgeDistance offset = source_phantom.GetReverseDistance();
-                    std::cout << "offset: " << offset << std::endl;
-                    distances_table[location] -= offset;
-                    std::cout << "offsets DIRECTION == REVERSE_DIRECTION 6 "
-                              << "distances_table[location]: " << distances_table[location]
-                              << std::endl;
+                    DIRECTION == FORWARD_DIRECTION ? distances_table[location] -= offset
+                                                   : distances_table[location] += offset;
                 }
-                if (source_phantom.IsValidReverseTarget() &&
-                    source_phantom.reverse_segment_id.id == target)
-                {
-
-                    EdgeDistance offset = source_phantom.GetReverseDistance();
-                    distances_table[location] += offset;
-                    std::cout << "offsets DIRECTION == REVERSE_DIRECTION 9 "
-                              << "distances_table[location]: " << distances_table[location]
-                              << std::endl;
-                }
-                if (source_phantom.IsValidForwardTarget() &&
-                    source_phantom.reverse_segment_id.id == target)
-                {
-
-                    EdgeDistance offset = source_phantom.GetReverseDistance();
-                    distances_table[location] += offset;
-                    std::cout << "offsets DIRECTION == REVERSE_DIRECTION 10 "
-                              << "distances_table[location]: " << distances_table[location]
-                              << std::endl;
-                }
-
-                if (target_phantom.IsValidForwardTarget() &&
-                    target_phantom.forward_segment_id.id == target)
+                if (target_phantom.forward_segment_id.id == target)
                 {
                     //       ............       <-- calculateEGBAnnotation returns distance from 0
                     //       to 3
@@ -665,14 +536,10 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                     //       ................   <-- want this distance as result
                     // entry 0---1---2---3---   <-- 3 is exit node
                     EdgeDistance offset = target_phantom.GetForwardDistance();
-                    std::cout << "offset: " << offset << std::endl;
-                    distances_table[location] += offset;
-                    std::cout << "offsets DIRECTION == REVERSE_DIRECTION 7 "
-                              << "distances_table[location]: " << distances_table[location]
-                              << std::endl;
+                    DIRECTION == FORWARD_DIRECTION ? distances_table[location] += offset
+                                                   : distances_table[location] -= offset;
                 }
-                if (target_phantom.IsValidReverseSource() &&
-                    target_phantom.reverse_segment_id.id == target)
+                else if (target_phantom.reverse_segment_id.id == target)
                 {
                     //       ............       <-- calculateEGBAnnotation returns distance from 0
                     //       to 3
@@ -680,234 +547,105 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                     //       ................   <-- want this distance as result
                     // entry 0---1---2---3---   <-- 3 is exit node
                     EdgeDistance offset = target_phantom.GetReverseDistance();
-                    std::cout << "offset: " << offset << std::endl;
-                    distances_table[location] += offset;
-                    std::cout << "offsets DIRECTION == REVERSE_DIRECTION 8 "
-                              << "distances_table[location]: " << distances_table[location]
-                              << std::endl;
+                    DIRECTION == FORWARD_DIRECTION ? distances_table[location] += offset
+                                                   : distances_table[location] -= offset;
                 }
-                if (target_phantom.IsValidReverseSource() &&
-                    target_phantom.reverse_segment_id.id == source)
-                {
+            }
 
-                    EdgeDistance offset = target_phantom.GetReverseDistance();
-                    // DIRECTION == FORWARD_DIRECTION ? distances_table[location] += offset :
-                    // distances_table[location] -= offset;
-                    std::cout << "offset: " << offset << std::endl;
-                    distances_table[location] -= offset;
-                    std::cout << "offsets DIRECTION == REVERSE_DIRECTION 11 "
-                              << "distances_table[location]: " << distances_table[location]
-                              << std::endl;
-                }
-                if (target_phantom.IsValidForwardSource() &&
-                    target_phantom.reverse_segment_id.id == source)
+            if (packed_path.empty())
+            {
+                std::cout << "offsets when packed path is empty" << std::endl;
+                if (DIRECTION == FORWARD_DIRECTION)
                 {
-                    EdgeDistance offset = target_phantom.GetForwardDistance();
-                    // DIRECTION == FORWARD_DIRECTION ? distances_table[location] += offset :
-                    // distances_table[location] -= offset;
-                    std::cout << "offset: " << offset << std::endl;
-                    distances_table[location] -= offset;
-                    std::cout << "offsets DIRECTION == REVERSE_DIRECTION 12 "
-                              << "distances_table[location]: " << distances_table[location]
-                              << std::endl;
+                    std::cout << "source_phantom.forward_segment_id.id: "
+                              << source_phantom.forward_segment_id.id
+                              << " source_phantom.reverse_segment_id.id: "
+                              << source_phantom.reverse_segment_id.id << std::endl;
+                    std::cout << "target_phantom.forward_segment_id.id: "
+                              << target_phantom.forward_segment_id.id
+                              << " target_phantom.reverse_segment_id.id: "
+                              << target_phantom.reverse_segment_id.id << std::endl;
+
+                    if (source_phantom.IsValidForwardSource() &&
+                        target_phantom.IsValidForwardTarget() &&
+                        target_phantom.GetForwardDistance() > source_phantom.GetForwardDistance())
+                    {
+                        //       --------->t        <-- offsets
+                        //       ->s                <-- subtract source offset from target offset
+                        //         .........        <-- want this distance as result
+                        // entry 0---1---2---3---   <-- 3 is exit node
+                        EdgeDistance offset = target_phantom.GetForwardDistance() -
+                                              source_phantom.GetForwardDistance();
+                        distances_table[location] = offset;
+
+                        std::cout << "offsets DIRECTION == FORWARD_DIRECTION 1"
+                                  << "distances_table[location]: " << distances_table[location]
+                                  << std::endl
+                                  << std::endl;
+                    }
+                    else if (source_phantom.IsValidReverseSource() &&
+                             target_phantom.IsValidReverseTarget())
+                    {
+
+                        //               s<---      <-- offsets
+                        //         t<---------      <-- subtract source offset from target offset
+                        //         ......           <-- want this distance as result
+                        // entry 0---1---2---3---   <-- 3 is exit node
+                        EdgeDistance offset = target_phantom.GetReverseDistance() -
+                                              source_phantom.GetReverseDistance();
+                        distances_table[location] = offset;
+                        std::cout << "offsets DIRECTION == FORWARD_DIRECTION 2"
+                                  << "distances_table[location]: " << distances_table[location]
+                                  << std::endl
+                                  << std::endl;
+                    }
+                }
+                else if (DIRECTION == REVERSE_DIRECTION)
+                {
+                    std::cout << "source_phantom.forward_segment_id.id: "
+                              << source_phantom.forward_segment_id.id
+                              << " source_phantom.reverse_segment_id.id: "
+                              << source_phantom.reverse_segment_id.id << std::endl;
+                    std::cout << "target_phantom.forward_segment_id.id: "
+                              << target_phantom.forward_segment_id.id
+                              << " target_phantom.reverse_segment_id.id: "
+                              << target_phantom.reverse_segment_id.id << std::endl;
+
+                    if (source_phantom.IsValidForwardTarget() &&
+                        target_phantom.IsValidForwardSource() &&
+                        source_phantom.GetForwardDistance() > target_phantom.GetForwardDistance())
+                    {
+                        //       --------->t        <-- offsets
+                        //       ->s                <-- subtract source offset from target offset
+                        //         .........        <-- want this distance as result
+                        // entry 0---1---2---3---   <-- 3 is exit node
+                        EdgeDistance offset = source_phantom.GetForwardDistance() -
+                                              target_phantom.GetForwardDistance();
+                        distances_table[location] = offset;
+                        std::cout << "offsets DIRECTION == REVERSE_DIRECTION 3"
+                                  << "distances_table[location]: " << distances_table[location]
+                                  << std::endl
+                                  << std::endl;
+                    }
+                    else if (source_phantom.IsValidReverseTarget() &&
+                             target_phantom.IsValidReverseSource())
+                    {
+
+                        //               s<---      <-- offsets
+                        //         t<---------      <-- subtract source offset from target offset
+                        //         ......           <-- want this distance as result
+                        // entry 0---1---2---3---   <-- 3 is exit node
+                        EdgeDistance offset = source_phantom.GetReverseDistance() -
+                                              target_phantom.GetReverseDistance();
+                        distances_table[location] = offset;
+                        std::cout << "offsets DIRECTION == REVERSE_DIRECTION 4 "
+                                  << "distances_table[location]: " << distances_table[location]
+                                  << std::endl
+                                  << std::endl;
+                    }
                 }
             }
         }
-
-        // std::cout << "distances_table: ";
-        // for (auto distance: distances_table) std::cout << distance << ", ";
-        // std::cout << std::endl;
-
-        // std::cout << "middle_nodes_table.size(): " << middle_nodes_table.size() << std::endl;
-        // std::cout << "phantom_nodes.size(): " << phantom_nodes.size() << std::endl;
-        // std::cout << " source_phantom.forward_segment_id.id: "
-        //                 << source_phantom.forward_segment_id.id
-        //                 << " source_phantom.reverse_segment_id.id: "
-        //                 << source_phantom.reverse_segment_id.id << std::endl;
-
-        // auto index = 0;
-        // for (auto middle_node_id : middle_nodes_table)
-        // {
-        //     auto target_phantom_index = DIRECTION == FORWARD_DIRECTION
-        //                           ? 0 * middle_nodes_table.size() + index
-        //                           : 0 + (index + 1) * 1;
-        //     auto distance_table_index = DIRECTION == FORWARD_DIRECTION
-        //                           ? 0 * middle_nodes_table.size() + index
-        //                           : 0 + index * 1;
-        //     std::cout << "target_phantom_index: " << target_phantom_index << ", ";
-        //     std::cout << " distance_table_index: " << distance_table_index << ", ";
-        //     std::cout << " middle_node_id: " << middle_node_id << std::endl;
-        //     PhantomNode target_phantom = phantom_nodes[target_phantom_index];
-        //     std::cout << " target_phantom.forward_segment_id.id: "
-        //                 << target_phantom.forward_segment_id.id
-        //                 << " target_phantom.reverse_segment_id.id: "
-        //                 << target_phantom.reverse_segment_id.id << std::endl;
-        //     index++;
-        // }
-
-        // auto index = 0;
-
-        // for (auto middle_node_id : middle_nodes_table)
-        // {
-        //     auto target_phantom_index = DIRECTION == FORWARD_DIRECTION
-        //                           ? 0 * middle_nodes_table.size() + index
-        //                           : 0 + (index + 1) * 1;
-        //     auto distance_table_index = DIRECTION == FORWARD_DIRECTION
-        //                           ? 0 * middle_nodes_table.size() + index
-        //                           : 0 + index * 1;
-        //     PhantomNode target_phantom = phantom_nodes[target_phantom_index];
-
-        //     if (target_phantom_index == phantom_index)
-        //     {
-        //         distances_table[distance_table_index] = 0.0;
-        //         continue;
-        //     }
-
-        //     std::cout << " middle_node_id: " << middle_node_id << std::endl;
-        //     std::cout << "source_phantom.forward_segment_id.id: "
-        //           << source_phantom.forward_segment_id.id
-        //           << " source_phantom.reverse_segment_id.id: "
-        //           << source_phantom.reverse_segment_id.id << std::endl;
-        //     std::cout << "target_phantom.forward_segment_id.id: "
-        //           << target_phantom.forward_segment_id.id
-        //           << " target_phantom.reverse_segment_id.id: "
-        //           << target_phantom.reverse_segment_id.id << std::endl;
-
-        //     PackedPath packed_path = mld::retrievePackedPathFromSingleManyToManyHeap<DIRECTION>(
-        //         query_heap,
-        //         middle_node_id); // packed_path_from_source_to_middle
-        //     std::reverse(packed_path.begin(), packed_path.end());
-
-        //     if (packed_path.empty()) {
-        //         if (target_phantom.GetForwardDistance() > source_phantom.GetForwardDistance())
-        //         {
-        //             //       --------->t        <-- offsets
-        //             //       ->s                <-- subtract source offset from target offset
-        //             //         .........        <-- want this distance as result
-        //             // entry 0---1---2---3---   <-- 3 is exit node
-        //             EdgeDistance offset =
-        //                 target_phantom.GetForwardDistance() -
-        //                 source_phantom.GetForwardDistance();
-        //             distances_table[distance_table_index] = offset;
-        //         }
-        //         else
-        //         {
-        //             //               s<---      <-- offsets
-        //             //         t<---------      <-- subtract source offset from target offset
-        //             //         ......           <-- want this distance as result
-        //             // entry 0---1---2---3---   <-- 3 is exit node
-        //             EdgeDistance offset =
-        //                 target_phantom.GetReverseDistance() -
-        //                 source_phantom.GetReverseDistance();
-        //             distances_table[distance_table_index] = offset;
-        //         }
-        //     }
-
-        //     if (!packed_path.empty())
-        //     {
-        //         std::cout << "packed_path: ";
-        //         for (auto edge : packed_path)
-        //         {
-        //             std::cout << std::get<0>(edge) << ",";
-        //         }
-        //         std::cout << std::get<1>(packed_path.back());
-        //         std::cout << std::endl;
-
-        //         auto &forward_heap = *engine_working_data.forward_heap_1;
-        //         auto &reverse_heap = *engine_working_data.reverse_heap_1;
-        //         EdgeWeight weight = INVALID_EDGE_WEIGHT;
-        //         std::vector<NodeID> unpacked_nodes;
-        //         std::vector<EdgeID> unpacked_edges;
-        //         std::tie(weight, unpacked_nodes, unpacked_edges) =
-        //             unpackPathAndCalculateDistance(engine_working_data,
-        //                                            facade,
-        //                                            forward_heap,
-        //                                            reverse_heap,
-        //                                            DO_NOT_FORCE_LOOPS,
-        //                                            DO_NOT_FORCE_LOOPS,
-        //                                            INVALID_EDGE_WEIGHT,
-        //                                            packed_path,
-        //                                            middle_node_id,
-        //                                            PhantomNodes{source_phantom, target_phantom});
-
-        //         auto annotation = 0.0;
-        //         NodeID source = unpacked_nodes.front();
-        //         NodeID target = unpacked_nodes.back();
-        //         if (DIRECTION == REVERSE_DIRECTION)
-        //         {
-        //             std::reverse(unpacked_nodes.begin(), unpacked_nodes.end());
-        //             source = unpacked_nodes.back();
-        //             target = unpacked_nodes.front();
-        //         }
-        //         for (auto node = unpacked_nodes.begin(); node != std::prev(unpacked_nodes.end());
-        //              ++node)
-        //         {
-        //             annotation += computeEdgeDistance(facade, *node);
-        //         }
-
-        //         std::cout << "unpacked_path: ";
-        //         for (auto node : unpacked_nodes)
-        //         {
-        //             std::cout << node << ",";
-        //         }
-        //         std::cout << std::endl;
-
-        //         std::cout << "annotation: " << annotation << std::endl;
-        //         distances_table[distance_table_index] = annotation;
-
-        //         if (source_phantom.forward_segment_id.id == source)
-        //         {
-        //             //       ............       <-- calculateEGBAnnotation returns distance from
-        //             0
-        //             //       to 3
-        //             //       -->s               <-- subtract offset to start at source
-        //             //          .........       <-- want this distance as result
-        //             // entry 0---1---2---3---   <-- 3 is exit node
-        //             EdgeDistance offset = source_phantom.GetForwardDistance();
-        //             DIRECTION == FORWARD_DIRECTION ? distances_table[distance_table_index] -=
-        //             offset : distances_table[distance_table_index] += offset;
-        //         }
-        //         else if (source_phantom.reverse_segment_id.id == source)
-        //         {
-        //             //       ............    <-- calculateEGBAnnotation returns distance from 0
-        //             to 3
-        //             //          s<-------    <-- subtract offset to start at source
-        //             //       ...             <-- want this distance
-        //             // entry 0---1---2---3   <-- 3 is exit node
-        //             EdgeDistance offset = source_phantom.GetReverseDistance();
-        //             DIRECTION == FORWARD_DIRECTION ? distances_table[distance_table_index] -=
-        //             offset : distances_table[distance_table_index] += offset;
-        //         }
-        //         if (target_phantom.forward_segment_id.id == target)
-        //         {
-        //             //       ............       <-- calculateEGBAnnotation returns distance from
-        //             0
-        //             //       to 3
-        //             //                   ++>t   <-- add offset to get to target
-        //             //       ................   <-- want this distance as result
-        //             // entry 0---1---2---3---   <-- 3 is exit node
-        //             EdgeDistance offset = target_phantom.GetForwardDistance();
-        //             DIRECTION == FORWARD_DIRECTION ? distances_table[distance_table_index] +=
-        //             offset : distances_table[distance_table_index] -= offset;
-        //         }
-        //         else if (target_phantom.reverse_segment_id.id == target)
-        //         {
-        //             //       ............       <-- calculateEGBAnnotation returns distance from
-        //             0
-        //             //       to 3
-        //             //                   <++t   <-- add offset to get from target
-        //             //       ................   <-- want this distance as result
-        //             // entry 0---1---2---3---   <-- 3 is exit node
-        //             EdgeDistance offset = target_phantom.GetReverseDistance();
-        //             DIRECTION == FORWARD_DIRECTION ? distances_table[distance_table_index] +=
-        //             offset : distances_table[distance_table_index] -= offset;
-        //         }
-        //     }
-        //     std::cout << "distances_table: ";
-        //     for (auto distance: distances_table) std::cout << distance << ", ";
-        //     std::cout << std::endl;
-        //     index++;
-        // }
     }
 
     return std::make_pair(durations, distances_table);
@@ -1185,6 +923,7 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
             std::cout << std::endl;
 
             std::cout << "annotation: " << annotation << std::endl;
+
             distances_table[location] = annotation;
 
             if (source_phantom.forward_segment_id.id == source)
