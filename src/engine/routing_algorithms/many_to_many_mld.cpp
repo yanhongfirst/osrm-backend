@@ -507,6 +507,13 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                 std::cout << "source: " << source << std::endl;
                 std::cout << "target: " << target << std::endl;
 
+                if (DIRECTION == REVERSE_DIRECTION)
+                {
+                    source = source == source_phantom.forward_segment_id.id ? source_phantom.reverse_segment_id.id : source_phantom.forward_segment_id.id;
+                    target = target == target_phantom.forward_segment_id.id ? target_phantom.reverse_segment_id.id : target_phantom.forward_segment_id.id;
+                }
+
+
                 if (source_phantom.forward_segment_id.id == source)
                 {
                     //       ............       <-- calculateEGBAnnotation returns distance from 0
@@ -515,8 +522,7 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                     //          .........       <-- want this distance as result
                     // entry 0---1---2---3---   <-- 3 is exit node
                     EdgeDistance offset = source_phantom.GetForwardDistance();
-                    DIRECTION == FORWARD_DIRECTION ? distances_table[location] -= offset
-                                                   : distances_table[location] += offset;
+                    distances_table[location] -= offset;
                 }
                 else if (source_phantom.reverse_segment_id.id == source)
                 {
@@ -525,8 +531,7 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                     //       ...             <-- want this distance
                     // entry 0---1---2---3   <-- 3 is exit node
                     EdgeDistance offset = source_phantom.GetReverseDistance();
-                    DIRECTION == FORWARD_DIRECTION ? distances_table[location] -= offset
-                                                   : distances_table[location] += offset;
+                    distances_table[location] -= offset;
                 }
                 if (target_phantom.forward_segment_id.id == target)
                 {
@@ -536,8 +541,7 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                     //       ................   <-- want this distance as result
                     // entry 0---1---2---3---   <-- 3 is exit node
                     EdgeDistance offset = target_phantom.GetForwardDistance();
-                    DIRECTION == FORWARD_DIRECTION ? distances_table[location] += offset
-                                                   : distances_table[location] -= offset;
+                    distances_table[location] += offset;
                 }
                 else if (target_phantom.reverse_segment_id.id == target)
                 {
@@ -547,8 +551,7 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                     //       ................   <-- want this distance as result
                     // entry 0---1---2---3---   <-- 3 is exit node
                     EdgeDistance offset = target_phantom.GetReverseDistance();
-                    DIRECTION == FORWARD_DIRECTION ? distances_table[location] += offset
-                                                   : distances_table[location] -= offset;
+                    distances_table[location] += offset;
                 }
             }
 
