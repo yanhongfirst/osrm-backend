@@ -142,17 +142,6 @@ Feature: Basic Distance Matrix
             | c | 200+-1 |
             | d | 300+-1 |
 
-        When I request a travel distance matrix I should get
-            |   | a | b   | c   | d     |
-            | a | 0 | 100 | 200 | 299.9 |
-
-        When I request a travel distance matrix I should get
-            |   | a     |
-            | a | 0     |
-            | b | 100   |
-            | c | 200   |
-            | d | 299.9 |
-
     Scenario: Testbot - Travel distance matrix of small grid
         Given the node map
             """
@@ -260,14 +249,6 @@ Feature: Basic Distance Matrix
             | a | 0      | 100+-1 | 200+-1 | 300+-1 |
             | b | 100+-1 | 0      | 100+-1 | 200+-1 |
             | e | 200+-1 | 100+-1 | 0      | 100+-1 |
-        When I request a travel distance matrix I should get
-            |   | a | b   | e   | f      |
-            | a | 0 | 100 | 200 | 300+-1 |
-
-        When I request a travel distance matrix I should get
-            |   | a   | b   | e   | f      |
-            | a | 0   | 100 | 200 | 300+-1 |
-            | b | 100 | 0   | 100 | 200    |
 
         When I request a travel distance matrix I should get
             |   | a      | b      | e      |
@@ -499,7 +480,7 @@ Feature: Basic Distance Matrix
 
         When I request a travel distance matrix I should get
             |   | a | b      | c      | d      |
-            | a | 0 | 300+-2 | 200+-2 | 500+-2 |
+            | a | 0 | 450+-2 | 200+-2 | 500+-2 |
 
         When I request a travel distance matrix I should get
             |   | a      |
@@ -509,9 +490,9 @@ Feature: Basic Distance Matrix
             | d | 500+-2 |
 
         When I request a travel distance matrix I should get
-            |   | a   | c   |
-            | a | 0   | 200 |
-            | c | 200 | 0   |
+            |   | a      | c      |
+            | a | 0      | 200+-2 |
+            | c | 200+-2 | 0      |
 
 
     # Check rounding errors

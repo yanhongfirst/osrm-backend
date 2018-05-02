@@ -318,10 +318,8 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
         for (auto edge : facade.GetAdjacentEdgeRange(node))
         {
             const auto &data = facade.GetEdgeData(edge);
-            // if ((DIRECTION == FORWARD_DIRECTION) ? facade.IsForwardEdge(edge)
-                                                 // : facade.IsBackwardEdge(edge))
-            if ((DIRECTION == FORWARD_DIRECTION ? data.forward : data.backward) &&
-                !query_heap.WasInserted(facade.GetTarget(edge)))
+            if ((DIRECTION == FORWARD_DIRECTION) ? facade.IsForwardEdge(edge)
+                                                 : facade.IsBackwardEdge(edge))
             {
                 const auto turn_id = data.turn_id;
                 const auto node_id = DIRECTION == FORWARD_DIRECTION ? node : facade.GetTarget(edge);
