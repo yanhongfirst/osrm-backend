@@ -410,8 +410,7 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
             NodeID middle_node_id = middle_nodes_table[location];
 
             PackedPath packed_path = mld::retrievePackedPathFromSingleManyToManyHeap<DIRECTION>(
-                query_heap,
-                middle_node_id);
+                query_heap, middle_node_id);
             if (DIRECTION == FORWARD_DIRECTION)
                 std::reverse(packed_path.begin(), packed_path.end());
 
@@ -451,8 +450,12 @@ oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
 
                 if (DIRECTION == REVERSE_DIRECTION)
                 {
-                    source = source == source_phantom.forward_segment_id.id ? source_phantom.reverse_segment_id.id : source_phantom.forward_segment_id.id;
-                    target = target == target_phantom.forward_segment_id.id ? target_phantom.reverse_segment_id.id : target_phantom.forward_segment_id.id;
+                    source = source == source_phantom.forward_segment_id.id
+                                 ? source_phantom.reverse_segment_id.id
+                                 : source_phantom.forward_segment_id.id;
+                    target = target == target_phantom.forward_segment_id.id
+                                 ? target_phantom.reverse_segment_id.id
+                                 : target_phantom.forward_segment_id.id;
                 }
 
                 if (source_phantom.forward_segment_id.id == source)
