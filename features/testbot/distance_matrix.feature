@@ -475,7 +475,7 @@ Feature: Basic Distance Matrix
     Scenario: Testbot - Travel distance matrix with ties
         Given the node map
             """
-            a     b
+            a        b
 
             c     d
             """
@@ -493,9 +493,9 @@ Feature: Basic Distance Matrix
 
         When I route I should get
             | from | to | route    | distance  |
-            | a    | b  | ab,ab    | 300m +- 1 |
+            | a    | b  | ab,ab    | 450m      |
             | a    | c  | ac,ac    | 200m      |
-            | a    | d  | ab,bd,bd | 500m +- 1 |
+            | a    | d  | ac,dc,dc | 500m +- 1 |
 
         When I request a travel distance matrix I should get
             |   | a | b      | c      | d      |
@@ -504,9 +504,14 @@ Feature: Basic Distance Matrix
         When I request a travel distance matrix I should get
             |   | a      |
             | a | 0      |
-            | b | 300+-2 |
+            | b | 450+-2 |
             | c | 200+-2 |
             | d | 500+-2 |
+
+        When I request a travel distance matrix I should get
+            |   | a   | c   |
+            | a | 0   | 200 |
+            | c | 200 | 0   |
 
 
     # Check rounding errors
@@ -524,3 +529,5 @@ Feature: Basic Distance Matrix
         When I request a travel distance matrix I should get
             |   | a | b       | c       | d       |
             | a | 0 | 1000+-3 | 2000+-3 | 3000+-3 |
+
+
