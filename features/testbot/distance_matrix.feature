@@ -544,3 +544,30 @@ Feature: Basic Distance Matrix
             |   |   a   |
             | a |   0   |
             | b | 240.4 |
+
+    Scenario: Testbot - Varying distances between nodes
+        Given the node map
+            """
+            a b   c      d
+
+            e
+
+
+
+            f
+            """
+
+        And the ways
+            | nodes  | oneway |
+            | feabcd | yes    |
+            | ec     |        |
+            | fd     |        |
+
+        When I request a travel distance matrix I should get
+            |   | a       | b       | c       | d       | e       | f       |
+            | a | 0       | 100+-1  | 300+-1  | 650+-1  | 1930+-1 | 1533+-1 |
+            | b | 760+-1  | 0       | 200+-1  | 550+-1  | 1830+-1 | 1433+-1 |
+            | c | 560+-2  | 660+-2  | 0       | 350+-1  | 1630+-1 | 1233+-1 |
+            | d | 1480+-2 | 1580+-1 | 1780+-1 | 0       | 1280+-1 | 883+-1  |
+            | e | 200+-2  | 300+-2  | 500+-1  | 710+-1  | 0       | 1593+-1 |
+            | f | 597+-1  | 696+-1  | 896+-1  | 1108+-1 | 400+-3  | 0       |
