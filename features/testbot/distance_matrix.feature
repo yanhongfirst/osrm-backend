@@ -453,6 +453,17 @@ Feature: Basic Distance Matrix
             | 7 | 300+-5  | 200+-5  | 600+-5  | 500+-5  | 900+-5  | 800+-5  | 0       | 1100+-5 |
             | 8 | 400+-5  | 300+-5  | 700+-5  | 600+-5  | 1000+-5 | 900+-5  | 100+-5  | 0       |
 
+        When I request a travel distance matrix I should get
+            |   | 1       |
+            | 1 | 0       |
+            | 2 | 100+-5  |
+            | 3 | 900+-5  |
+            | 4 | 1000+-5 |
+            | 5 | 600+-5  |
+            | 6 | 700+-5  |
+            | 7 | 300+-5  |
+            | 8 | 400+-5  |
+
     Scenario: Testbot - Travel distance matrix with ties
         Given the node map
             """
@@ -505,10 +516,31 @@ Feature: Basic Distance Matrix
 
         And the ways
             | nodes    |
-            | abcd |
+            | abcd     |
 
         When I request a travel distance matrix I should get
             |   | a | b       | c       | d       |
             | a | 0 | 1000+-3 | 2000+-3 | 3000+-3 |
 
 
+    Scenario: Testbot - OneToMany vs ManyToOne
+        Given the node map
+            """
+            a b
+            c
+            """
+
+        And the ways
+            | nodes  | oneway |
+            | ab     | yes    |
+            | ac     |        |
+            | bc     |        |
+
+        When I request a travel distance matrix I should get
+            |   |   a   | b      |
+            | b | 240.4 | 0      |
+
+        When I request a travel distance matrix I should get
+            |   |   a   |
+            | a |   0   |
+            | b | 240.4 |
