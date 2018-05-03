@@ -795,9 +795,6 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
 
             distances_table[location] = annotation;
 
-            NodeID source = unpacked_nodes.front();
-            NodeID target = unpacked_nodes.back();
-
             if (source_phantom.IsValidForwardSource() &&
                 source_phantom.forward_segment_id.id == source)
             {
