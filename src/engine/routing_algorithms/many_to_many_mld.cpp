@@ -779,6 +779,9 @@ void calculateDistances(typename SearchEngineData<mld::Algorithm>::ManyToManyQue
 
             auto annotation = 0.0;
 
+            NodeID source = unpacked_nodes.front();
+            NodeID target = unpacked_nodes.back();
+
             if (DIRECTION == REVERSE_DIRECTION)
             {
                 std::reverse(unpacked_nodes.begin(), unpacked_nodes.end());
