@@ -54,7 +54,7 @@ inline bool checkParentCellRestriction(CellID, const PhantomNodes &) { return tr
 
 // Restricted search (Args is LevelID, CellID):
 //   * use the fixed level for queries
-//   * check if the node cell is the same as the specified parent onr
+//   * check if the node cell is the same as the specified parent
 template <typename MultiLevelPartition>
 inline LevelID getNodeQueryLevel(const MultiLevelPartition &, NodeID, LevelID level, CellID)
 {
@@ -64,6 +64,26 @@ inline LevelID getNodeQueryLevel(const MultiLevelPartition &, NodeID, LevelID le
 inline bool checkParentCellRestriction(CellID cell, LevelID, CellID parent)
 {
     return cell == parent;
+}
+
+// Unrestricted search with a single phantom node (Args is const PhantomNode &):
+//   * use partition.GetQueryLevel to find the node query level
+//   * allow to traverse all cells
+template <typename MultiLevelPartition>
+inline LevelID getNodeQueryLevel(const MultiLevelPartition &partition,
+                                 const NodeID node,
+                                 const PhantomNode &phantom_node)
+{
+    auto highest_diffrent_level = [&partition, node](const SegmentID &phantom_node) {
+        if (phantom_node.enabled)
+            return partition.GetHighestDifferentLevel(phantom_node.id, node);
+        return INVALID_LEVEL_ID;
+    };
+
+    const auto node_level = std::min(highest_diffrent_level(phantom_node.forward_segment_id),
+                                     highest_diffrent_level(phantom_node.reverse_segment_id));
+
+    return node_level;
 }
 }
 

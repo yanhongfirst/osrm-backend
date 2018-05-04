@@ -244,6 +244,8 @@ void calculateDistances(typename SearchEngineData<ch::Algorithm>::ManyToManyQuer
             auto annotation =
                 ch::calculateEBGNodeAnnotations(facade, packed_leg.begin(), packed_leg.end());
 
+            std::cout << "=== " << annotation << "\n";
+
             distances_table[row_index * number_of_targets + column_index] = annotation;
 
             // check the direction of travel to figure out how to calculate the offset to/from
@@ -256,6 +258,7 @@ void calculateDistances(typename SearchEngineData<ch::Algorithm>::ManyToManyQuer
                 // entry 0---1---2---3---   <-- 3 is exit node
                 EdgeDistance offset = source_phantom.GetForwardDistance();
                 distances_table[row_index * number_of_targets + column_index] -= offset;
+                std::cout << "=== source_offset " << -offset << "\n";
             }
             else if (source_phantom.reverse_segment_id.id == packed_leg.front())
             {
@@ -265,6 +268,7 @@ void calculateDistances(typename SearchEngineData<ch::Algorithm>::ManyToManyQuer
                 // entry 0---1---2---3   <-- 3 is exit node
                 EdgeDistance offset = source_phantom.GetReverseDistance();
                 distances_table[row_index * number_of_targets + column_index] -= offset;
+                std::cout << "=== source_offset " << -offset << "\n";
             }
             if (target_phantom.forward_segment_id.id == packed_leg.back())
             {
@@ -274,6 +278,7 @@ void calculateDistances(typename SearchEngineData<ch::Algorithm>::ManyToManyQuer
                 // entry 0---1---2---3---   <-- 3 is exit node
                 EdgeDistance offset = target_phantom.GetForwardDistance();
                 distances_table[row_index * number_of_targets + column_index] += offset;
+                std::cout << "=== target_offset " << offset << "\n";
             }
             else if (target_phantom.reverse_segment_id.id == packed_leg.back())
             {
@@ -283,6 +288,7 @@ void calculateDistances(typename SearchEngineData<ch::Algorithm>::ManyToManyQuer
                 // entry 0---1---2---3---   <-- 3 is exit node
                 EdgeDistance offset = target_phantom.GetReverseDistance();
                 distances_table[row_index * number_of_targets + column_index] += offset;
+                std::cout << "=== target_offset " << offset << "\n";
             }
         }
         else
@@ -310,6 +316,10 @@ void calculateDistances(typename SearchEngineData<ch::Algorithm>::ManyToManyQuer
                 distances_table[row_index * number_of_targets + column_index] = offset;
             }
         }
+
+        std::cout << "=== final " << distances_table[row_index * number_of_targets + column_index]
+                  << "\n";
+
         packed_leg.clear();
     }
 }
