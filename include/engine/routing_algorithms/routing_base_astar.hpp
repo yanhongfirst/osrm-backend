@@ -30,29 +30,29 @@ namespace astar
 
 using PackedPath = std::vector<NodeID>;
 
-inline util::Coordinate getExitCoordinate(const DataFacade<Algorithm> &facade, const NodeID node)
+inline util::Coordinate getEntryCoordinate(const DataFacade<Algorithm> &facade, const NodeID node)
 {
     auto index = facade.GetGeometryIndex(node);
     if (index.forward)
     {
-        return facade.GetCoordinateOfNode(facade.GetUncompressedForwardGeometry(index.id).back());
+        return facade.GetCoordinateOfNode(facade.GetUncompressedForwardGeometry(index.id).front());
     }
     else
     {
-        return facade.GetCoordinateOfNode(facade.GetUncompressedReverseGeometry(index.id).back());
+        return facade.GetCoordinateOfNode(facade.GetUncompressedReverseGeometry(index.id).front());
     }
 }
 
 inline EdgeWeight
 lowerBoundToNode(const DataFacade<Algorithm> &facade, const NodeID from, const NodeID to)
 {
-    auto from_coordinate = getExitCoordinate(facade, from);
-    auto to_coordinate = getExitCoordinate(facade, to);
+    auto from_coordinate = getEntryCoordinate(facade, from);
+    auto to_coordinate = getEntryCoordinate(facade, to);
 
     auto distance =
         util::coordinate_calculation::fccApproximateDistance(from_coordinate, to_coordinate);
 
-    constexpr double MAX_SPEED = 180 / 3.6;
+    constexpr double MAX_SPEED = 140 / 3.6;
 
     return static_cast<EdgeWeight>(distance / MAX_SPEED * facade.GetWeightPrecision());
 }
