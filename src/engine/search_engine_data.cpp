@@ -130,5 +130,33 @@ void SearchEngineData<MLD>::InitializeOrClearManyToManyThreadLocalStorage(
         many_to_many_heap.reset(new ManyToManyQueryHeap(number_of_nodes, number_of_boundary_nodes));
     }
 }
+
+// A-Star
+using AStar = routing_algorithms::astar::Algorithm;
+SearchEngineData<AStar>::SearchEngineHeapPtr SearchEngineData<AStar>::forward_heap_1;
+SearchEngineData<AStar>::SearchEngineHeapPtr SearchEngineData<AStar>::reverse_heap_1;
+
+void SearchEngineData<AStar>::InitializeOrClearFirstThreadLocalStorage(
+    unsigned number_of_nodes)
+{
+    if (forward_heap_1.get())
+    {
+        forward_heap_1->Clear();
+    }
+    else
+    {
+        forward_heap_1.reset(new QueryHeap(number_of_nodes));
+    }
+
+    if (reverse_heap_1.get())
+    {
+        reverse_heap_1->Clear();
+    }
+    else
+    {
+        reverse_heap_1.reset(new QueryHeap(number_of_nodes));
+    }
+}
+
 }
 }

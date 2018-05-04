@@ -112,6 +112,20 @@ template <> struct SearchEngineData<routing_algorithms::mld::Algorithm>
     void InitializeOrClearManyToManyThreadLocalStorage(unsigned number_of_nodes,
                                                        unsigned number_of_boundary_nodes);
 };
+
+template <> struct SearchEngineData<routing_algorithms::astar::Algorithm>
+{
+    using QueryHeap = util::
+        QueryHeap<NodeID, NodeID, EdgeWeight, HeapData, util::UnorderedMapStorage<NodeID, int>>;
+
+    using SearchEngineHeapPtr = boost::thread_specific_ptr<QueryHeap>;
+
+    static SearchEngineHeapPtr forward_heap_1;
+    static SearchEngineHeapPtr reverse_heap_1;
+
+    void InitializeOrClearFirstThreadLocalStorage(unsigned number_of_nodes);
+
+};
 }
 }
 

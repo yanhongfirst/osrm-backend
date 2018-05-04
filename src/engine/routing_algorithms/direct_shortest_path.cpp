@@ -2,6 +2,7 @@
 #include "engine/routing_algorithms/routing_base.hpp"
 #include "engine/routing_algorithms/routing_base_ch.hpp"
 #include "engine/routing_algorithms/routing_base_mld.hpp"
+#include "engine/routing_algorithms/routing_base_astar.hpp"
 
 namespace osrm
 {
@@ -87,6 +88,34 @@ InternalRouteResult directShortestPathSearch(SearchEngineData<mld::Algorithm> &e
                                                                    DO_NOT_FORCE_LOOPS,
                                                                    INVALID_EDGE_WEIGHT,
                                                                    phantom_nodes);
+
+    return extractRoute(facade, weight, phantom_nodes, unpacked_nodes, unpacked_edges);
+}
+
+template <>
+InternalRouteResult
+directShortestPathSearch(SearchEngineData<astar::Algorithm> &engine_working_data,
+                         const DataFacade<astar::Algorithm> &facade,
+                         const PhantomNodes &phantom_nodes)
+{
+    engine_working_data.InitializeOrClearFirstThreadLocalStorage(facade.GetNumberOfNodes());
+    auto &forward_heap = *engine_working_data.forward_heap_1;
+    auto &reverse_heap = *engine_working_data.reverse_heap_1;
+    insertNodesInHeaps(forward_heap, reverse_heap, phantom_nodes);
+
+    // TODO: when structured bindings will be allowed change to
+    // auto [weight, source_node, target_node, unpacked_edges] = ...
+    EdgeWeight weight = INVALID_EDGE_WEIGHT;
+    std::vector<NodeID> unpacked_nodes;
+    std::vector<EdgeID> unpacked_edges;
+    std::tie(weight, unpacked_nodes, unpacked_edges) = astar::search(engine_working_data,
+                                                                     facade,
+                                                                     forward_heap,
+                                                                     reverse_heap,
+                                                                     DO_NOT_FORCE_LOOPS,
+                                                                     DO_NOT_FORCE_LOOPS,
+                                                                     INVALID_EDGE_WEIGHT,
+                                                                     phantom_nodes);
 
     return extractRoute(facade, weight, phantom_nodes, unpacked_nodes, unpacked_edges);
 }

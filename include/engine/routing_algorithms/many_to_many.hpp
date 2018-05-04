@@ -86,6 +86,18 @@ manyToManySearch(SearchEngineData<Algorithm> &engine_working_data,
                  const bool calculate_distance,
                  const bool calculate_duration);
 
+inline std::pair<std::vector<EdgeDuration>, std::vector<EdgeDistance>>
+manyToManySearch(SearchEngineData<astar::Algorithm> &,
+                 const DataFacade<astar::Algorithm> &,
+                 const std::vector<PhantomNode> &,
+                 const std::vector<std::size_t> &,
+                 const std::vector<std::size_t> &,
+                 const bool,
+                 const bool)
+{
+    throw util::exception("Not implemented");
+}
+
 } // namespace routing_algorithms
 } // namespace engine
 } // namespace osrm

@@ -37,6 +37,13 @@ std::vector<TurnData> getTileTurns(const DataFacade<mld::Algorithm> &facade,
                                    const std::vector<RTreeLeaf> &edges,
                                    const std::vector<std::size_t> &sorted_edge_indexes);
 
+inline std::vector<TurnData> getTileTurns(const DataFacade<astar::Algorithm> &,
+                                          const std::vector<RTreeLeaf> &,
+                                          const std::vector<std::size_t> &)
+{
+    throw util::exception("Not implemented");
+}
+
 } // namespace routing_algorithms
 } // namespace engine
 } // namespace osrm

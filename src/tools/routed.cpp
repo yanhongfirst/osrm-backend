@@ -66,6 +66,8 @@ std::istream &operator>>(std::istream &in, EngineConfig::Algorithm &algorithm)
         algorithm = EngineConfig::Algorithm::CH;
     else if (token == "mld")
         algorithm = EngineConfig::Algorithm::MLD;
+    else if (token == "astar")
+        algorithm = EngineConfig::Algorithm::AStar;
     else
         throw util::RuntimeError(token, ErrorCode::UnknownAlgorithm, SOURCE_REF);
     return in;

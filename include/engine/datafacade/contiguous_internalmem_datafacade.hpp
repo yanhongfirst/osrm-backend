@@ -726,6 +726,86 @@ template <> class ContiguousInternalMemoryAlgorithmDataFacade<MLD> : public Algo
     }
 };
 
+template <> class ContiguousInternalMemoryAlgorithmDataFacade<AStar> : public AlgorithmDataFacade<AStar>
+{
+    // MLD data
+    using QueryGraph = customizer::MultiLevelEdgeBasedGraphView;
+    using GraphNode = QueryGraph::NodeArrayEntry;
+    using GraphEdge = QueryGraph::EdgeArrayEntry;
+
+    QueryGraph query_graph;
+
+    void InitializeInternalPointers(const storage::SharedDataIndex &index,
+                                    const std::string &,
+                                    const std::size_t)
+    {
+        query_graph = make_multi_level_graph_view(index, "/mld/multilevelgraph");
+    }
+
+    // allocator that keeps the allocation data
+    std::shared_ptr<ContiguousBlockAllocator> allocator;
+
+  public:
+    ContiguousInternalMemoryAlgorithmDataFacade(
+        std::shared_ptr<ContiguousBlockAllocator> allocator_,
+        const std::string &metric_name,
+        const std::size_t exclude_index)
+        : allocator(std::move(allocator_))
+    {
+        InitializeInternalPointers(allocator->GetIndex(), metric_name, exclude_index);
+    }
+
+    // search graph access
+    unsigned GetNumberOfNodes() const override final { return query_graph.GetNumberOfNodes(); }
+
+    unsigned GetMaxBorderNodeID() const override final { return query_graph.GetMaxBorderNodeID(); }
+
+    unsigned GetNumberOfEdges() const override final { return query_graph.GetNumberOfEdges(); }
+
+    unsigned GetOutDegree(const NodeID n) const override final
+    {
+        return query_graph.GetOutDegree(n);
+    }
+
+    EdgeRange GetAdjacentEdgeRange(const NodeID node) const override final
+    {
+        return query_graph.GetAdjacentEdgeRange(node);
+    }
+
+    EdgeWeight GetNodeWeight(const NodeID node) const override final
+    {
+        return query_graph.GetNodeWeight(node);
+    }
+
+    EdgeDuration GetNodeDuration(const NodeID node) const override final
+    {
+        return query_graph.GetNodeDuration(node);
+    }
+
+    bool IsForwardEdge(const NodeID node) const override final
+    {
+        return query_graph.IsForwardEdge(node);
+    }
+
+    bool IsBackwardEdge(const NodeID node) const override final
+    {
+        return query_graph.IsBackwardEdge(node);
+    }
+
+    NodeID GetTarget(const EdgeID e) const override final { return query_graph.GetTarget(e); }
+
+    const EdgeData &GetEdgeData(const EdgeID e) const override final
+    {
+        return query_graph.GetEdgeData(e);
+    }
+
+    // searches for a specific edge
+    EdgeID FindEdge(const NodeID from, const NodeID to) const override final
+    {
+        return query_graph.FindEdge(from, to);
+    }
+};
+
 template <>
 class ContiguousInternalMemoryDataFacade<MLD> final
     : public ContiguousInternalMemoryDataFacadeBase,
@@ -738,6 +818,22 @@ class ContiguousInternalMemoryDataFacade<MLD> final
                                        const std::size_t exclude_index)
         : ContiguousInternalMemoryDataFacadeBase(allocator, metric_name, exclude_index),
           ContiguousInternalMemoryAlgorithmDataFacade<MLD>(allocator, metric_name, exclude_index)
+    {
+    }
+};
+
+template <>
+class ContiguousInternalMemoryDataFacade<AStar> final
+    : public ContiguousInternalMemoryDataFacadeBase,
+      public ContiguousInternalMemoryAlgorithmDataFacade<AStar>
+{
+  private:
+  public:
+    ContiguousInternalMemoryDataFacade(std::shared_ptr<ContiguousBlockAllocator> allocator,
+                                       const std::string &metric_name,
+                                       const std::size_t exclude_index)
+        : ContiguousInternalMemoryDataFacadeBase(allocator, metric_name, exclude_index),
+          ContiguousInternalMemoryAlgorithmDataFacade<AStar>(allocator, metric_name, exclude_index)
     {
     }
 };

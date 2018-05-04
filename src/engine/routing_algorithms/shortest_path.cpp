@@ -1,5 +1,6 @@
 #include "engine/routing_algorithms/routing_base_ch.hpp"
 #include "engine/routing_algorithms/routing_base_mld.hpp"
+#include "engine/routing_algorithms/routing_base_astar.hpp"
 #include "engine/routing_algorithms/shortest_path_impl.hpp"
 
 namespace osrm
@@ -18,6 +19,12 @@ shortestPathSearch(SearchEngineData<ch::Algorithm> &engine_working_data,
 template InternalRouteResult
 shortestPathSearch(SearchEngineData<mld::Algorithm> &engine_working_data,
                    const DataFacade<mld::Algorithm> &facade,
+                   const std::vector<PhantomNodes> &phantom_nodes_vector,
+                   const boost::optional<bool> continue_straight_at_waypoint);
+
+template InternalRouteResult
+shortestPathSearch(SearchEngineData<astar::Algorithm> &engine_working_data,
+                   const DataFacade<astar::Algorithm> &facade,
                    const std::vector<PhantomNodes> &phantom_nodes_vector,
                    const boost::optional<bool> continue_straight_at_waypoint);
 

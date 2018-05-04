@@ -25,15 +25,25 @@ struct Algorithm final
 };
 }
 
+// A-Star
+namespace astar
+{
+struct Algorithm final
+{
+};
+}
+
 // Algorithm names
 template <typename AlgorithmT> const char *name();
 template <> inline const char *name<ch::Algorithm>() { return "CH"; }
 template <> inline const char *name<mld::Algorithm>() { return "MLD"; }
+template <> inline const char *name<astar::Algorithm>() { return "astar"; }
 
 // Algorithm identifier
 template <typename AlgorithmT> const char *identifier();
 template <> inline const char *identifier<ch::Algorithm>() { return "ch"; }
 template <> inline const char *identifier<mld::Algorithm>() { return "mld"; }
+template <> inline const char *identifier<astar::Algorithm>() { return "astar"; }
 
 template <typename AlgorithmT> struct HasAlternativePathSearch final : std::false_type
 {
@@ -109,6 +119,32 @@ template <> struct HasGetTileTurns<mld::Algorithm> final : std::true_type
 {
 };
 template <> struct HasExcludeFlags<mld::Algorithm> final : std::true_type
+{
+};
+
+// Algorithms supported by A*
+template <> struct HasAlternativePathSearch<astar::Algorithm> final : std::false_type
+{
+};
+template <> struct HasDirectShortestPathSearch<astar::Algorithm> final : std::true_type
+{
+};
+template <> struct HasShortestPathSearch<astar::Algorithm> final : std::true_type
+{
+};
+template <> struct HasMapMatching<astar::Algorithm> final : std::true_type
+{
+};
+template <> struct HasManyToManySearch<astar::Algorithm> final : std::false_type
+{
+};
+template <> struct SupportsDistanceAnnotationType<astar::Algorithm> final : std::false_type
+{
+};
+template <> struct HasGetTileTurns<astar::Algorithm> final : std::false_type
+{
+};
+template <> struct HasExcludeFlags<astar::Algorithm> final : std::false_type
 {
 };
 }

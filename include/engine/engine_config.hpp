@@ -65,6 +65,8 @@ namespace engine
  * queries.
  *  - Algorithm::MLD
  *      Multi Level Dijkstra, moderately fast in both pre-processing and query.
+ *  - Algorithm::AStar
+ *      AStar, slow queries but flexible.
  *
  * \see OSRM, StorageConfig
  */
@@ -76,7 +78,8 @@ struct EngineConfig final
     {
         CH,
         CoreCH, // Deprecated, will be removed in v6.0
-        MLD
+        MLD,
+        AStar
     };
 
     storage::StorageConfig storage_config;

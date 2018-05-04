@@ -22,6 +22,7 @@ namespace datafacade
 // Namespace local aliases for algorithms
 using CH = routing_algorithms::ch::Algorithm;
 using MLD = routing_algorithms::mld::Algorithm;
+using AStar = routing_algorithms::astar::Algorithm;
 
 template <typename AlgorithmT> class AlgorithmDataFacade;
 
@@ -93,6 +94,39 @@ template <> class AlgorithmDataFacade<MLD>
     virtual const customizer::CellMetricView &GetCellMetric() const = 0;
 
     virtual EdgeRange GetBorderEdgeRange(const LevelID level, const NodeID node) const = 0;
+
+    // searches for a specific edge
+    virtual EdgeID FindEdge(const NodeID from, const NodeID to) const = 0;
+};
+
+template <> class AlgorithmDataFacade<AStar>
+{
+  public:
+    using EdgeData = customizer::EdgeBasedGraphEdgeData;
+    using EdgeRange = util::range<EdgeID>;
+
+    // search graph access
+    virtual unsigned GetNumberOfNodes() const = 0;
+
+    virtual unsigned GetMaxBorderNodeID() const = 0;
+
+    virtual unsigned GetNumberOfEdges() const = 0;
+
+    virtual unsigned GetOutDegree(const NodeID n) const = 0;
+
+    virtual EdgeRange GetAdjacentEdgeRange(const NodeID node) const = 0;
+
+    virtual EdgeWeight GetNodeWeight(const NodeID node) const = 0;
+
+    virtual EdgeWeight GetNodeDuration(const NodeID node) const = 0; // TODO: to be removed
+
+    virtual bool IsForwardEdge(EdgeID edge) const = 0;
+
+    virtual bool IsBackwardEdge(EdgeID edge) const = 0;
+
+    virtual NodeID GetTarget(const EdgeID e) const = 0;
+
+    virtual const EdgeData &GetEdgeData(const EdgeID e) const = 0;
 
     // searches for a specific edge
     virtual EdgeID FindEdge(const NodeID from, const NodeID to) const = 0;

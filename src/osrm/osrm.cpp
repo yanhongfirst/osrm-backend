@@ -21,6 +21,7 @@ OSRM::OSRM(engine::EngineConfig &config)
 {
     using CH = engine::routing_algorithms::ch::Algorithm;
     using MLD = engine::routing_algorithms::mld::Algorithm;
+    using AStar = engine::routing_algorithms::astar::Algorithm;
 
     // First, check that necessary core data is available
     if (!config.use_shared_memory && !config.storage_config.IsValid())
@@ -45,6 +46,9 @@ OSRM::OSRM(engine::EngineConfig &config)
         break;
     case EngineConfig::Algorithm::MLD:
         engine_ = std::make_unique<engine::Engine<MLD>>(config);
+        break;
+    case EngineConfig::Algorithm::AStar:
+        engine_ = std::make_unique<engine::Engine<AStar>>(config);
         break;
     default:
         util::exception("Algorithm not implemented!");

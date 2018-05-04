@@ -26,6 +26,14 @@ InternalManyRoutesResult alternativePathSearch(SearchEngineData<mld::Algorithm> 
                                                const PhantomNodes &phantom_node_pair,
                                                unsigned number_of_alternatives);
 
+inline InternalManyRoutesResult alternativePathSearch(SearchEngineData<astar::Algorithm> &,
+                                                      const DataFacade<astar::Algorithm> &,
+                                                      const PhantomNodes &,
+                                                      unsigned)
+{
+    throw util::exception("Not implemented");
+}
+
 } // namespace routing_algorithms
 } // namespace engine
 } // namespace osrm
