@@ -1,6 +1,9 @@
 #ifndef OSRM_ENGINE_ROUTING_BASE_ASTAR_HPP
 #define OSRM_ENGINE_ROUTING_BASE_ASTAR_HPP
 
+#include "heuristic/bidirectional_potential.hpp"
+#include "heuristic/distance_potential.hpp"
+
 #include "engine/algorithm.hpp"
 #include "engine/datafacade.hpp"
 #include "engine/routing_algorithms/routing_base.hpp"
@@ -29,80 +32,17 @@ namespace astar
 // For re-constructing the actual path we need to trace back all parent "pointers".
 
 using PackedPath = std::vector<NodeID>;
+using Potential = heuristic::BidirectionalPotential<heuristic::DistancePotential<Algorithm>>;
 
-inline util::Coordinate getEntryCoordinate(const DataFacade<Algorithm> &facade, const NodeID node)
+template <bool DIRECTION> auto getNodePotential(const Potential &potential, const NodeID node)
 {
-    auto index = facade.GetGeometryIndex(node);
-    if (index.forward)
-    {
-        return facade.GetCoordinateOfNode(facade.GetUncompressedForwardGeometry(index.id).front());
-    }
-    else
-    {
-        return facade.GetCoordinateOfNode(facade.GetUncompressedReverseGeometry(index.id).front());
-    }
-}
-
-inline EdgeWeight
-lowerBoundToNode(const DataFacade<Algorithm> &facade, const NodeID from, const NodeID to)
-{
-    auto from_coordinate = getEntryCoordinate(facade, from);
-    auto to_coordinate = getEntryCoordinate(facade, to);
-
-    auto distance =
-        util::coordinate_calculation::fccApproximateDistance(from_coordinate, to_coordinate);
-
-    constexpr double MAX_SPEED = 140 / 3.6;
-
-    return static_cast<EdgeWeight>(distance / MAX_SPEED * facade.GetWeightPrecision());
-}
-
-template <bool DIRECTION>
-EdgeWeight
-getNodePotential(const DataFacade<Algorithm> &facade, const NodeID node, const PhantomNodes &nodes)
-{
-    EdgeWeight forward_potential = INVALID_EDGE_WEIGHT;
-    EdgeWeight reverse_potential = INVALID_EDGE_WEIGHT;
-
-    if (nodes.target_phantom.forward_segment_id.enabled)
-    {
-        forward_potential =
-            std::min(forward_potential,
-                     lowerBoundToNode(facade, node, nodes.target_phantom.forward_segment_id.id) +
-                         nodes.target_phantom.GetForwardWeightPlusOffset());
-    }
-
-    if (nodes.target_phantom.reverse_segment_id.enabled)
-    {
-        forward_potential =
-            std::min(forward_potential,
-                     lowerBoundToNode(facade, node, nodes.target_phantom.reverse_segment_id.id) +
-                         nodes.target_phantom.GetReverseWeightPlusOffset());
-    }
-
-    if (nodes.source_phantom.forward_segment_id.enabled)
-    {
-        reverse_potential =
-            std::min(reverse_potential,
-                     lowerBoundToNode(facade, node, nodes.source_phantom.forward_segment_id.id) +
-                         nodes.source_phantom.GetForwardWeightPlusOffset());
-    }
-
-    if (nodes.source_phantom.reverse_segment_id.enabled)
-    {
-        reverse_potential =
-            std::min(reverse_potential,
-                     lowerBoundToNode(facade, node, nodes.source_phantom.reverse_segment_id.id) +
-                         nodes.source_phantom.GetReverseWeightPlusOffset());
-    }
-
     if (DIRECTION == FORWARD_DIRECTION)
     {
-        return (forward_potential - reverse_potential) / 2;
+        return potential.Forward(node);
     }
     else
     {
-        return (reverse_potential - forward_potential) / 2;
+        return potential.Reverse(node);
     }
 }
 
@@ -156,9 +96,9 @@ retrievePackedPathFromHeap(const SearchEngineData<Algorithm>::QueryHeap &forward
 template <bool DIRECTION, typename Algorithm, typename... Args>
 void relaxOutgoingEdges(const DataFacade<Algorithm> &facade,
                         typename SearchEngineData<Algorithm>::QueryHeap &forward_heap,
+                        const Potential &potential,
                         const NodeID node,
-                        const EdgeWeight weight,
-                        const PhantomNodes &nodes)
+                        const EdgeWeight weight)
 {
     for (const auto edge : facade.GetAdjacentEdgeRange(node))
     {
@@ -176,8 +116,8 @@ void relaxOutgoingEdges(const DataFacade<Algorithm> &facade,
                 const auto turn_penalty = facade.GetWeightPenaltyForEdgeID(edge_data.turn_id);
 
                 const EdgeWeight to_weight = weight + node_weight + turn_penalty;
-                const EdgeWeight potential = getNodePotential<DIRECTION>(facade, to, nodes);
-                const EdgeWeight weight_estimate = to_weight + potential;
+                const EdgeWeight node_potential = getNodePotential<DIRECTION>(potential, node);
+                const EdgeWeight weight_estimate = to_weight + node_potential;
 
                 if (!forward_heap.WasInserted(to))
                 {
@@ -197,16 +137,16 @@ template <bool DIRECTION, typename Algorithm, typename... Args>
 void routingStep(const DataFacade<Algorithm> &facade,
                  typename SearchEngineData<Algorithm>::QueryHeap &forward_heap,
                  typename SearchEngineData<Algorithm>::QueryHeap &reverse_heap,
+                 const Potential &potential,
                  NodeID &middle_node,
                  EdgeWeight &path_upper_bound,
                  const bool force_loop_forward,
-                 const bool force_loop_reverse,
-                 const PhantomNodes &nodes)
+                 const bool force_loop_reverse)
 {
     const auto node = forward_heap.DeleteMin();
     const auto estimate = forward_heap.GetKey(node);
-    const auto potential = getNodePotential<DIRECTION>(facade, node, nodes);
-    const auto weight = estimate - potential;
+    const auto node_potential = getNodePotential<DIRECTION>(potential, node);
+    const auto weight = estimate - node_potential;
 
     BOOST_ASSERT(!facade.ExcludeNode(node));
 
@@ -218,7 +158,7 @@ void routingStep(const DataFacade<Algorithm> &facade,
     if (reverse_heap.WasInserted(node))
     {
         auto reverse_estimate = reverse_heap.GetKey(node);
-        auto reverse_potential = getNodePotential<!DIRECTION>(facade, node, nodes);
+        auto reverse_potential = getNodePotential<!DIRECTION>(potential, node);
         auto path_weight = weight + reverse_estimate - reverse_potential;
 
         // MLD uses loops forcing only to prune single node paths in forward and/or
@@ -233,7 +173,7 @@ void routingStep(const DataFacade<Algorithm> &facade,
     }
 
     // Relax outgoing edges from node
-    relaxOutgoingEdges<DIRECTION>(facade, forward_heap, node, weight, nodes);
+    relaxOutgoingEdges<DIRECTION>(facade, forward_heap, potential, node, weight);
 }
 
 // With (s, middle, t) we trace back the paths middle -> s and middle -> t.
@@ -263,6 +203,10 @@ UnpackedPath search(SearchEngineData<Algorithm> &,
     BOOST_ASSERT(!forward_heap.Empty() && forward_heap.MinKey() < INVALID_EDGE_WEIGHT);
     BOOST_ASSERT(!reverse_heap.Empty() && reverse_heap.MinKey() < INVALID_EDGE_WEIGHT);
 
+    heuristic::DistancePotential<Algorithm> forward_potential{facade, phantom_nodes.target_phantom};
+    heuristic::DistancePotential<Algorithm> reverse_potential{facade, phantom_nodes.source_phantom};
+    auto potential = heuristic::makePotential(forward_potential, reverse_potential);
+
     // run two-Target Dijkstra routing step.
     NodeID middle = SPECIAL_NODEID;
     EdgeWeight weight = weight_upper_bound;
@@ -276,11 +220,11 @@ UnpackedPath search(SearchEngineData<Algorithm> &,
             routingStep<FORWARD_DIRECTION>(facade,
                                            forward_heap,
                                            reverse_heap,
+                                           potential,
                                            middle,
                                            weight,
                                            force_loop_forward,
-                                           force_loop_reverse,
-                                           phantom_nodes);
+                                           force_loop_reverse);
             if (!forward_heap.Empty())
                 forward_heap_min = forward_heap.MinKey();
         }
@@ -289,11 +233,11 @@ UnpackedPath search(SearchEngineData<Algorithm> &,
             routingStep<REVERSE_DIRECTION>(facade,
                                            reverse_heap,
                                            forward_heap,
+                                           potential,
                                            middle,
                                            weight,
                                            force_loop_reverse,
-                                           force_loop_forward,
-                                           phantom_nodes);
+                                           force_loop_forward);
             if (!reverse_heap.Empty())
                 reverse_heap_min = reverse_heap.MinKey();
         }
