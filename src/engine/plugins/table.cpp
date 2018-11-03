@@ -83,6 +83,26 @@ Status TablePlugin::HandleRequest(const RoutingAlgorithmsInterface &algorithms,
 
     auto snapped_phantoms = SnapPhantomNodes(phantom_nodes);
 
+    bool use_simple_snapping = false;
+    if (use_simple_snapping)
+    {
+        // Reset the snapped phantoms list - these are the ones that actually
+        // get used for routing
+        snapped_phantoms.clear();
+
+        // Note: phantom_nodes is a vector of PhantomNodePair objects which come
+        //       back from the initial coordinate search in the RTree.
+        //       a PhantomNodePair contains two snapped coordinates:
+        //         .first = the first snapped edge found
+        //         .second = a snapped edge on the "big component", in case
+        //                   .first is on a small component
+        //       To do naive snapping, we just always use .first
+        std::transform(phantom_nodes.begin(),
+                       phantom_nodes.end(),
+                       std::back_inserter(snapped_phantoms),
+                       [](const PhantomNodePair &pair) { return pair.first; });
+    }
+
     bool request_distance = params.annotations & api::TableParameters::AnnotationsType::Distance;
     bool request_duration = params.annotations & api::TableParameters::AnnotationsType::Duration;
 
