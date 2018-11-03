@@ -86,8 +86,8 @@ Status TablePlugin::HandleRequest(const RoutingAlgorithmsInterface &algorithms,
     bool use_simple_snapping = false;
     if (use_simple_snapping)
     {
-        // Reset the snapped phantoms list - these are the ones that actually
-        // get used for routing
+        // Throw away the snapped phantom nodes decided a couple of lines up
+        // We'll repopulate this list on the next line
         snapped_phantoms.clear();
 
         // Note: phantom_nodes is a vector of PhantomNodePair objects which come
