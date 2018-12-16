@@ -25,7 +25,9 @@ var osrm = new OSRM('network.osrm');
                Make sure you prepared the dataset with the correct toolchain.
     -   `options.shared_memory` **[Boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)?** Connects to the persistent shared memory datastore.
                This requires you to run `osrm-datastore` prior to creating an `OSRM` object.
-    -   `options.memory_file` **[String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)?** Path to a file on disk to store the memory using mmap.
+    -   `options.memory_file` **[String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)?** *DEPRECATED*
+               Old behaviour: Path to a file on disk to store the memory using mmap.  Current behaviour: setting this value is the same as setting `mmap_memory: true`.
+    -   `options.mmap_memory` **[Boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)?** Map on-disk files to virtual memory addresses (mmap), rather than loading into RAM.
     -   `options.path` **[String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)?** The path to the `.osrm` files. This is mutually exclusive with setting {options.shared_memory} to true.
     -   `options.max_locations_trip` **[Number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)?** Max. locations supported in trip query (default: unlimited).
     -   `options.max_locations_viaroute` **[Number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)?** Max. locations supported in viaroute query (default: unlimited).
@@ -127,6 +129,9 @@ tables. Optionally returns distance table.
     -   `options.destinations` **[Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)?** An array of `index` elements (`0 <= integer <
         #coordinates`) to use location with given index as destination. Default is to use all.
     -   `options.approaches` **[Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)?** Keep waypoints on curb side. Can be `null` (unrestricted, default) or `curb`.
+    -   `options.fallback_speed` **[Number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)?** Replace `null` responses in result with as-the-crow-flies estimates based on `fallback_speed`.  Value is in metres/second.
+    -   `options.fallback_coordinate` **[String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)?** Either `input` (default) or `snapped`.  If using a `fallback_speed`, use either the user-supplied coordinate (`input`), or the snapped coordinate (`snapped`) for calculating the as-the-crow-flies diestance between two points.
+    -   `options.scale_factor` **[Number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)?** Multiply the table duration values in the table by this number for more controlled input into a route optimization solver.
 -   `callback` **[Function](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function)**
 
 **Examples**
@@ -152,6 +157,7 @@ Returns **[Object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Refer
                  Values are given in seconds.
 **`sources`**: array of [`Ẁaypoint`](#waypoint) objects describing all sources in order.
 **`destinations`**: array of [`Ẁaypoint`](#waypoint) objects describing all destinations in order.
+**`fallback_speed_cells`**: (optional) if `fallback_speed` is used, will be an array of arrays of `row,column` values, indicating which cells contain estimated values.
 
 ### tile
 
